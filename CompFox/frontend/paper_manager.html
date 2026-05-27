@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试卷管理</title>
+    <link rel="icon" type="image/x-icon" href="/compfox/static/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .select-input {
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e1e5e9;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* 表格 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.draft {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .status-badge.published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.archived {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #e1e5e9;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            background: #f0f0f0;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* 题目选择区域 */
+        .question-selector {
+            display: grid;
+            grid-template-columns: 50% 50%;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .question-panel {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .question-panel h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .question-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .question-item {
+            padding: 10px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .question-item:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .question-item.selected {
+            border-color: #667eea;
+            background: #e7f3ff;
+        }
+
+        .question-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .question-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .question-text-preview {
+            font-size: 14px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 已选题目列表 */
+        .selected-question-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+        }
+
+        .selected-question-info {
+            flex: 1;
+        }
+
+        .question-order {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            text-align: center;
+            line-height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+            font-size: 12px;
+        }
+
+        .move-btns {
+            display: flex;
+            gap: 5px;
+        }
+
+        .move-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid #e1e5e9;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .move-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .remove-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: none;
+            background: #dc3545;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+        }
+
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 操作按钮组 */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">
+            <img src="/compfox/static/wolin.jpg" alt="Logo" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+            试卷管理
+        </h1>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchName" placeholder="试卷名称">
+                <select class="select-input" id="searchSubject">
+                    <option value="">全部合规领域</option>
+                    <option value="math">数学</option>
+                    <option value="chinese">语文</option>
+                    <option value="english">英语</option>
+                    <option value="physics">物理</option>
+                    <option value="chemistry">化学</option>
+                    <option value="biology">生物</option>
+                    <option value="history">历史</option>
+                    <option value="geography">地理</option>
+                    <option value="politics">政治</option>
+                </select>
+                <select class="select-input" id="searchStatus">
+                    <option value="">全部状态</option>
+                    <option value="draft">草稿</option>
+                    <option value="published">已发布</option>
+                    <option value="archived">已归档</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadPaperList()">搜索</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/compfox/question-manager" class="btn btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">📝 题目管理</a>
+                <button class="btn btn-primary" onclick="showCreateModal()">+ 新建试卷</button>
+            </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>试卷名称</th>
+                        <th>合规领域</th>
+                        <th>题目数</th>
+                        <th>总分</th>
+                        <th>时长 (分钟)</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="paperListBody">
+                    <tr>
+                        <td colspan="9" class="loading">
+                            <div class="spinner"></div>
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- 新建/编辑试卷弹窗 -->
+    <div class="modal" id="paperModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">新建试卷</h2>
+                <span class="close-btn" onclick="closePaperModal()">&times;</span>
+            </div>
+            <form id="paperForm">
+                <input type="hidden" id="editPaperId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">试卷名称</label>
+                        <input type="text" class="form-input" id="paperName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">合规领域</label>
+                        <select class="form-input" id="paperSubject">
+                            <option value="math">数学</option>
+                            <option value="chinese">语文</option>
+                            <option value="english">英语</option>
+                            <option value="physics">物理</option>
+                            <option value="chemistry">化学</option>
+                            <option value="biology">生物</option>
+                            <option value="history">历史</option>
+                            <option value="geography">地理</option>
+                            <option value="politics">政治</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">考试时长 (分钟)</label>
+                        <input type="number" class="form-input" id="durationMinutes" value="30" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">默认分值</label>
+                        <select class="form-input" id="defaultScoreType">
+                            <option value="uniform_1">每题 1 分</option>
+                            <option value="uniform_2">每题 2 分</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">试卷描述</label>
+                    <textarea class="form-input" id="paperDescription" rows="3"></textarea>
+                </div>
+
+                <!-- 题目选择 -->
+                <div class="form-group">
+                    <label class="form-label">题目选择</label>
+                    <div class="question-selector">
+                        <!-- 搜索题目 -->
+                        <div class="question-panel">
+                            <h3>搜索题目</h3>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <input type="text" class="form-input" id="questionKeyword" placeholder="关键词搜索题干">
+                            </div>
+                            <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <select class="form-input" id="questionSubject">
+                                    <option value="">全部合规领域</option>
+                                    <option value="math">数学</option>
+                                    <option value="chinese">语文</option>
+                                    <option value="english">英语</option>
+                                    <option value="physics">物理</option>
+                                    <option value="chemistry">化学</option>
+                                    <option value="biology">生物</option>
+                                    <option value="history">历史</option>
+                                    <option value="geography">地理</option>
+                                    <option value="politics">政治</option>
+                                </select>
+                                <select class="form-input" id="questionType">
+                                    <option value="">全部题型</option>
+                                    <option value="single_choice">单选题</option>
+                                    <option value="multiple_choice">多选题</option>
+                                    <option value="judgement">判断题</option>
+                                    <option value="fill_blank">填空题</option>
+                                    <option value="short_answer">简答题</option>
+                                    <option value="essay">作文题</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="searchQuestions(true)" style="width: 100%;">搜索</button>
+                            <div class="question-list" id="questionSearchList" style="margin-top: 15px;">
+                                <!-- 搜索结果 -->
+                            </div>
+                        </div>
+
+                        <!-- 已选题目 -->
+                        <div class="question-panel">
+                            <h3>已选题目 (<span id="selectedCount">0</span>)</h3>
+                            <div class="question-list" id="selectedQuestionList">
+                                <!-- 已选题目列表 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e1e5e9;">
+                    <button type="button" class="btn btn-secondary" onclick="closePaperModal()" style="flex: 1;">取消</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 版本历史弹窗 -->
+    <div class="modal" id="versionsModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>📋 版本历史</h2>
+                <span class="close-btn" onclick="closeVersionsModal()">&times;</span>
+            </div>
+            <div id="versionsList" style="max-height: 500px; overflow-y: auto;">
+                <div class="loading" style="padding: 40px;">
+                    <div class="spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentPage = 1;
+        let pageSize = 10;
+        let total = 0;
+        let selectedQuestions = []; // 已选题目数组 [{id, score}]
+        let subjectList = []; // 合规领域列表
+
+        // 题目搜索相关状态
+        let questionSearchPage = 1;
+        let questionSearchPageSize = 20;
+        let questionSearchTotal = 0;
+        let questionSearchLoading = false;
+        let questionSearchHasMore = false;
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubjects();
+            loadPaperList();
+            // 绑定回车键搜索
+            const keywordInput = document.getElementById('questionKeyword');
+            if (keywordInput) {
+                keywordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchQuestions(true);
+                    }
+                });
+            }
+            // 绑定题目点击事件（事件委托）
+            const searchContainer = document.getElementById('questionSearchList');
+            if (searchContainer) {
+                searchContainer.addEventListener('click', function(e) {
+                    const questionItem = e.target.closest('.question-item');
+                    if (questionItem) {
+                        const id = parseInt(questionItem.dataset.id);
+                        const text = questionItem.dataset.text;
+                        const type = questionItem.dataset.type;
+                        console.log('点击题目:', id, text?.substring(0, 20), type);
+                        selectQuestion(id, text, type);
+                    }
+                });
+            }
+        });
+
+        // 处理题目列表滚动事件
+        function handleQuestionListScroll(e) {
+            const container = e.target;
+            const scrollTop = container.scrollTop;
+            const scrollHeight = container.scrollHeight;
+            const clientHeight = container.clientHeight;
+
+            // 当滚动到距离底部 50px 以内时加载更多内容
+            if (scrollTop + clientHeight >= scrollHeight - 50 &&
+                questionSearchHasMore &&
+                !questionSearchLoading) {
+                searchQuestions(false); // 不重置，继续加载
+            }
+        }
+
+        // 绑定滚动事件（在搜索时调用）
+        let scrollEventBound = false;
+
+        function bindScrollEvent() {
+            const searchContainer = document.getElementById('questionSearchList');
+            if (searchContainer) {
+                // 只绑定一次滚动事件
+                if (!scrollEventBound) {
+                    searchContainer.addEventListener('scroll', handleQuestionListScroll);
+                    scrollEventBound = true;
+                }
+            }
+        }
+
+        // 加载合规领域列表
+        function loadSubjects() {
+            fetch('/compfox/question/subjects')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        subjectList = data.data || [];
+                        // 填充所有合规领域下拉框
+                        fillSubjectSelects();
+                    }
+                })
+                .catch(err => {
+                    console.error('加载合规领域列表失败:', err);
+                    // 使用默认合规领域列表
+                    subjectList = [
+                        {code: 'math', name: '数学'},
+                        {code: 'chinese', name: '语文'},
+                        {code: 'english', name: '英语'},
+                        {code: 'physics', name: '物理'},
+                        {code: 'chemistry', name: '化学'},
+                        {code: 'biology', name: '生物'},
+                        {code: 'history', name: '历史'},
+                        {code: 'geography', name: '地理'},
+                        {code: 'politics', name: '政治'}
+                    ];
+                    fillSubjectSelects();
+                });
+        }
+
+        // 填充合规领域下拉框
+        function fillSubjectSelects() {
+            const selects = [
+                document.getElementById('searchSubject'),
+                document.getElementById('paperSubject'),
+                document.getElementById('questionSubject')
+            ];
+
+            selects.forEach(select => {
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">全部合规领域</option>';
+                subjectList.forEach((subj) => {
+                    // 后端返回的格式：{code: 'subject_aml', value: 'aml', desc: 'CompFox - 合规领域 - 反洗钱'}
+                    const code = subj.value || (subj.code ? subj.code.replace('subject_', '') : subj);
+                    const name = subj.desc ? subj.desc.replace('CompFox - 合规领域-', '') : (subj.name || subj.value || subj.code || subj);
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+                // 恢复之前的选择
+                if (currentValue) select.value = currentValue;
+            });
+        }
+
+        // 加载试卷列表
+        function loadPaperList(page = 1) {
+            currentPage = page;
+            const name = document.getElementById('searchName').value.trim();
+            const subject = document.getElementById('searchSubject').value;
+            const status = document.getElementById('searchStatus').value;
+
+            let url = `/compfox/paper/list?page=${page}&page_size=${pageSize}`;
+            if (name) url += `&name=${encodeURIComponent(name)}`;
+            if (subject) url += `&subject=${subject}`;
+            if (status) url += `&status=${status}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        renderPaperList(data.data);
+                    } else {
+                        showToast('加载失败：' + (data.msg || '未知错误'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('网络错误');
+                });
+        }
+
+        // 渲染试卷列表
+        function renderPaperList(result) {
+            const tbody = document.getElementById('paperListBody');
+            total = result.total;
+
+            if (!result.list || result.list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #666;">暂无数据</td></tr>';
+                renderPagination(0);
+                return;
+            }
+
+            const statusMap = {
+                'draft': '草稿',
+                'published': '已发布',
+                'archived': '已归档'
+            };
+
+            tbody.innerHTML = result.list.map(paper => `
+                <tr>
+                    <td>${paper.id}</td>
+                    <td>${paper.paper_name}</td>
+                    <td>${getSubjectLabel(paper.subject)}</td>
+                    <td>${paper.question_count}</td>
+                    <td>${paper.total_score}</td>
+                    <td>${paper.duration_minutes}</td>
+                    <td><span class="status-badge ${paper.status}">${statusMap[paper.status] || paper.status}</span></td>
+                    <td>${formatDate(paper.created_at)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-sm btn-secondary" onclick="viewVersions(${paper.id})" title="查看版本历史">📋 版本</button>
+                            <button class="btn btn-sm btn-primary" onclick="editPaper(${paper.id})">编辑</button>
+                            <button class="btn btn-sm btn-success" onclick="copyExamUrl(${paper.id})">复制 URL</button>
+                            ${paper.status !== 'published' ? `<button class="btn btn-sm btn-success" onclick="publishPaper(${paper.id})">发布</button>` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deletePaper(${paper.id})">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            renderPagination(result.page, result.total, result.page_size);
+        }
+
+        // 渲染分页
+        function renderPagination(current, total, pageSize) {
+            const totalPages = Math.ceil(total / pageSize);
+            const pagination = document.getElementById('pagination');
+
+            let html = '';
+
+            // 上一页
+            html += `<button ${current === 1 ? 'disabled' : ''} onclick="loadPaperList(${current - 1})">上一页</button>`;
+
+            // 页码
+            let startPage = Math.max(1, current - 2);
+            let endPage = Math.min(totalPages, current + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button ${i === current ? 'class="active"' : ''} onclick="loadPaperList(${i})">${i}</button>`;
+            }
+
+            // 下一页
+            html += `<button ${current === totalPages || totalPages === 0 ? 'disabled' : ''} onclick="loadPaperList(${current + 1})">下一页</button>`;
+
+            pagination.innerHTML = html;
+        }
+
+        // 显示新建弹窗
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = '新建试卷';
+            document.getElementById('editPaperId').value = '';
+            document.getElementById('paperForm').reset();
+            selectedQuestions = [];
+            updateSelectedQuestionList();
+            document.getElementById('paperModal').classList.add('show');
+        }
+
+        // 关闭弹窗
+        function closePaperModal() {
+            document.getElementById('paperModal').classList.remove('show');
+        }
+
+        // 编辑试卷
+        function editPaper(paperId) {
+            fetch(`/compfox/paper/${paperId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        const paper = data.data;
+                        document.getElementById('modalTitle').textContent = '编辑试卷';
+                        document.getElementById('editPaperId').value = paperId;
+                        document.getElementById('paperName').value = paper.paper_name;
+
+                        // 等待合规领域列表加载后再设置值
+                        if (subjectList.length > 0) {
+                            document.getElementById('paperSubject').value = paper.subject || subjectList[0]?.code || 'math';
+                        } else {
+                            document.getElementById('paperSubject').value = paper.subject || 'math';
+                        }
+
+                        document.getElementById('durationMinutes').value = paper.duration_minutes || 30;
+                        document.getElementById('paperDescription').value = paper.description || '';
+
+                        // 加载已选题目
+                        selectedQuestions = paper.questions.map((q, index) => ({
+                            id: q.question_id,
+                            score: q.score,
+                            question_text: q.question_text,
+                            question_type: q.question_type
+                        }));
+                        updateSelectedQuestionList();
+
+                        document.getElementById('paperModal').classList.add('show');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('加载试卷详情失败');
+                });
+        }
+
+        // 搜索题目
+        function searchQuestions(reset = true) {
+            console.log('searchQuestions 被调用，reset:', reset);
+            if (reset) {
+                questionSearchPage = 1;
+                questionSearchTotal = 0;
+            }
+
+            if (questionSearchLoading) return;
+
+            questionSearchLoading = true;
+
+            const keyword = document.getElementById('questionKeyword').value.trim();
+            const subject = document.getElementById('questionSubject').value;
+            const questionType = document.getElementById('questionType').value;
+
+            console.log('搜索条件:', keyword, subject, questionType);
+
+            let url = `/compfox/question/search?page=${questionSearchPage}&page_size=${questionSearchPageSize}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            if (subject) url += `&subject=${subject}`;
+            if (questionType) url += `&question_type=${questionType}`;
+
+            console.log('请求 URL:', url);
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    console.log('搜索结果:', data);
+                    questionSearchLoading = false;
+                    if (data.status_code === 200 && data.data) {
+                        renderQuestionSearchList(data.data, reset);
+                    }
+                })
+                .catch(err => {
+                    questionSearchLoading = false;
+                    console.error('Error:', err);
+                });
+        }
+
+        // 渲染搜索结果
+        function renderQuestionSearchList(result, reset = false) {
+            console.log('renderQuestionSearchList 被调用，reset:', reset, '结果数量:', result.list?.length);
+            const container = document.getElementById('questionSearchList');
+
+            // 移除旧的加载提示
+            const oldLoading = document.getElementById('searchLoading');
+            const oldEnd = container.querySelector('.search-end-tip');
+            if (oldLoading) oldLoading.remove();
+            if (oldEnd) oldEnd.remove();
+
+            if (!result.list || result.list.length === 0) {
+                if (reset) {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">未找到题目</div>';
+                }
+                return;
+            }
+
+            // 清空或保留容器
+            if (reset) {
+                container.innerHTML = '';
+            }
+
+            // 使用 documentFragment 批量添加
+            const fragment = document.createDocumentFragment();
+            result.list.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.dataset.id = q.id;
+                item.dataset.text = q.question_text;
+                item.dataset.type = q.question_type;
+                item.innerHTML = `
+                    <div class="question-item-header">
+                        <span class="question-meta">${getSubjectLabel(q.subject)} · ${getTypeLabel(q.question_type)} · ${getDifficultyLabel(q.difficulty_level)}</span>
+                    </div>
+                    <div class="question-text-preview">${escapeHtml(q.question_text)}</div>
+                `;
+                fragment.appendChild(item);
+            });
+            container.appendChild(fragment);
+
+            console.log('渲染完成，题目元素数量:', container.querySelectorAll('.question-item').length);
+
+            // 更新分页状态
+            questionSearchTotal = result.total;
+            const loadedCount = container.querySelectorAll('.question-item').length;
+            questionSearchHasMore = loadedCount < result.total;
+            questionSearchPage++;
+
+            // 添加加载提示
+            if (questionSearchHasMore) {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'searchLoading';
+                loadingDiv.className = 'search-loading-tip';
+                loadingDiv.style.cssText = 'text-align: center; padding: 10px; color: #667eea; cursor: pointer;';
+                loadingDiv.textContent = '加载更多...';
+                loadingDiv.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    searchQuestions(false);
+                });
+                container.appendChild(loadingDiv);
+            } else {
+                const endTip = document.createElement('div');
+                endTip.id = 'searchEndTip_' + Date.now();
+                endTip.className = 'search-end-tip';
+                endTip.style.cssText = 'text-align: center; padding: 10px; color: #999;';
+                endTip.textContent = '已加载全部题目';
+                container.appendChild(endTip);
+            }
+
+            // 绑定滚动事件
+            bindScrollEvent();
+        }
+
+        // 选择题目
+        function selectQuestion(id, text, type) {
+            console.log('选择题目:', id, text?.substring(0, 20), type);
+
+            // 检查是否已选
+            if (selectedQuestions.find(q => q.id === id)) {
+                showToast('该题目已选择');
+                return;
+            }
+
+            // 添加默认分值
+            let defaultScore = 1;
+            selectedQuestions.push({ id, score: defaultScore, question_text: text, question_type: type });
+            updateSelectedQuestionList();
+            showToast('已添加到试卷');
+        }
+
+        // 更新已选题目列表
+        function updateSelectedQuestionList() {
+            console.log('更新已选题目列表，当前数量:', selectedQuestions.length);
+            const container = document.getElementById('selectedQuestionList');
+            document.getElementById('selectedCount').textContent = selectedQuestions.length;
+
+            if (selectedQuestions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">请选择题目</div>';
+                return;
+            }
+
+            container.innerHTML = selectedQuestions.map((q, index) => `
+                <div class="selected-question-item">
+                    <div class="selected-question-info">
+                        <span class="question-order">${index + 1}</span>
+                        <span>${escapeHtml(q.question_text?.substring(0, 50) || '')}${(q.question_text?.length > 50) ? '...' : ''}</span>
+                        <input type="number" class="form-input" value="${q.score}" min="0.5" step="0.5"
+                               style="width: 80px; display: inline-block; margin-left: 10px;"
+                               onchange="updateScore(${index}, this.value)" title="分值">
+                    </div>
+                    <div class="move-btns">
+                        <button class="move-btn" onclick="moveQuestion(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="move-btn" onclick="moveQuestion(${index}, 1)" ${index === selectedQuestions.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="remove-btn" onclick="removeQuestion(${index})">移除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新分值
+        function updateScore(index, score) {
+            selectedQuestions[index].score = parseFloat(score);
+        }
+
+        // 移动题目
+        function moveQuestion(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= selectedQuestions.length) return;
+
+            // 交换
+            [selectedQuestions[index], selectedQuestions[newIndex]] =
+            [selectedQuestions[newIndex], selectedQuestions[index]];
+
+            updateSelectedQuestionList();
+        }
+
+        // 移除题目
+        function removeQuestion(index) {
+            selectedQuestions.splice(index, 1);
+            updateSelectedQuestionList();
+        }
+
+        // 表单提交
+        document.getElementById('paperForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (selectedQuestions.length === 0) {
+                showToast('请至少选择一道题目');
+                return;
+            }
+
+            const editId = document.getElementById('editPaperId').value;
+            const paperName = document.getElementById('paperName').value.trim();
+            const subject = document.getElementById('paperSubject').value;
+            const durationMinutes = parseInt(document.getElementById('durationMinutes').value);
+            const description = document.getElementById('paperDescription').value.trim();
+
+            const questionIds = selectedQuestions.map(q => q.id).join(',');
+            const scores = selectedQuestions.map(q => q.score).join(',');
+
+            const url = editId ? `/compfox/paper/${editId}` : '/compfox/paper';
+            const method = editId ? 'PUT' : 'POST';
+
+            // 构建请求参数
+            const params = new URLSearchParams();
+            params.append('paper_name', paperName);
+            params.append('question_ids', questionIds);
+            params.append('scores', scores);
+            params.append('subject', subject);
+            params.append('duration_minutes', durationMinutes);
+            if (description) params.append('description', description);
+
+            fetch(url, {
+                method: method === 'PUT' ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status_code === 200) {
+                    showToast(editId ? '更新成功' : '创建成功');
+                    closePaperModal();
+                    loadPaperList(currentPage);
+                } else {
+                    showToast('操作失败：' + (data.msg || '未知错误'));
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showToast('网络错误');
+            });
+        });
+
+        // 复制考试 URL
+        function copyExamUrl(paperId) {
+            // 获取当前完整地址（包含协议、IP、端口）
+            const baseUrl = window.location.protocol + '//' + window.location.host;
+            const url = `${baseUrl}/compfox/exam?paper_id=${paperId}`;
+
+            // 优先使用 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast('URL 已复制到剪贴板');
+                }).catch(() => {
+                    fallbackCopy(url);
+                });
+            } else {
+                // 降级处理
+                fallbackCopy(url);
+            }
+        }
+
+        // 降级复制方法
+        function fallbackCopy(text) {
+            const input = document.createElement('input');
+            input.value = text;
+            input.style.position = 'fixed';
+            input.style.left = '-9999px';
+            document.body.appendChild(input);
+            input.select();
+            try {
+                document.execCommand('copy');
+                showToast('URL 已复制到剪贴板');
+            } catch (err) {
+                showToast('复制失败，请手动复制');
+            }
+            document.body.removeChild(input);
+        }
+
+        // 发布试卷
+        function publishPaper(paperId) {
+            if (!confirm('确定要发布该试卷吗？')) return;
+
+            fetch(`/compfox/paper/${paperId}/publish`, { method: 'PUT' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200) {
+                        showToast('发布成功');
+                        loadPaperList(currentPage);
+                    } else {
+                        showToast('发布失败：' + (data.msg || '未知错误'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('网络错误');
+                });
+        }
+
+        // 删除试卷
+        function deletePaper(paperId) {
+            if (!confirm('确定要删除该试卷吗？此操作不可恢复！')) return;
+
+            fetch(`/compfox/paper/${paperId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200) {
+                        showToast('删除成功');
+                        loadPaperList(currentPage);
+                    } else {
+                        showToast('删除失败：' + (data.msg || '未知错误'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('网络错误');
+                });
+        }
+
+        // 查看版本历史
+        function viewVersions(paperId) {
+            fetch(`/compfox/paper/${paperId}/versions`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        renderVersionsList(data.data);
+                        document.getElementById('versionsModal').classList.add('show');
+                    } else {
+                        showToast('加载版本历史失败');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('网络错误');
+                });
+        }
+
+        // 渲染版本列表
+        function renderVersionsList(versions) {
+            const container = document.getElementById('versionsList');
+            if (!versions || versions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">暂无版本历史</div>';
+                return;
+            }
+
+            container.innerHTML = versions.map((v, index) => `
+                <div class="version-item" style="
+                    padding: 15px;
+                    border: 1px solid #e1e5e9;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+                    ${index === 0 ? 'background: #e7f3ff; border-color: #667eea;' : 'background: white;'}
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;">
+                                ${index === 0 ? '📌 ' : ''}版本 ${v.version} - ${escapeHtml(v.paper_name)}
+                                ${index === 0 ? '<span style="background: #667eea; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 8px;">当前版本</span>' : ''}
+                            </div>
+                            <div style="color: #666; font-size: 14px;">
+                                <span>创建时间：${formatDate(v.created_at)}</span> |
+                                <span>题目数：${v.question_count}</span> |
+                                <span>总分：${v.total_score}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-primary" onclick="viewVersionDetail(${v.id})">查看详情</button>
+                            ${index > 0 ? `<button class="btn btn-sm btn-secondary" onclick="restoreVersion(${v.id})" style="margin-left: 5px;">恢复此版本</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 关闭版本历史弹窗
+        function closeVersionsModal() {
+            document.getElementById('versionsModal').classList.remove('show');
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('versionsModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeVersionsModal();
+            }
+        });
+
+        // 查看版本详情
+        function viewVersionDetail(paperId) {
+            window.location.href = `/compfox/exam?paper_id=${paperId}`;
+        }
+
+        // 恢复版本
+        function restoreVersion(paperId) {
+            if (!confirm('确定要恢复此版本吗？这将创建一个新版本。')) return;
+
+            fetch(`/compfox/paper/${paperId}/restore`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'updated_by=505'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('版本恢复成功！');
+                    // 关闭弹窗并刷新列表
+                    document.getElementById('versionHistoryModal').classList.remove('show');
+                    loadPaperList();
+                } else {
+                    showToast(data.message || '版本恢复失败');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('网络错误，请稍后重试');
+            });
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 工具函数
+        function getSubjectLabel(subject) {
+            if (!subject) return '-';
+            // 从动态加载的合规领域列表中查找
+            if (subjectList.length > 0) {
+                const subj = subjectList.find(s => {
+                    // 匹配 value 字段或去掉前缀的 code
+                    const code = s.value || (s.code ? s.code.replace('subject_', '') : s);
+                    return code === subject;
+                });
+                if (subj) {
+                    // 从 desc 提取名称，或使用 value
+                    if (subj.desc) {
+                        return subj.desc.replace('CompFox - 合规领域-', '');
+                    } else if (subj.value) {
+                        return subj.value;
+                    } else if (subj.name) {
+                        return subj.name;
+                    }
+                }
+            }
+            // 备用映射
+            const map = {
+                'math': '数学', 'chinese': '语文', 'english': '英语',
+                'physics': '物理', 'chemistry': '化学', 'biology': '生物',
+                'history': '历史', 'geography': '地理', 'politics': '政治'
+            };
+            return map[subject] || subject;
+        }
+
+        function getTypeLabel(type) {
+            const map = {
+                'single_choice': '单选', 'multiple_choice': '多选', 'judgement': '判断',
+                'fill_blank': '填空', 'short_answer': '简答', 'essay': '作文'
+            };
+            return map[type] || type || '';
+        }
+
+        function getDifficultyLabel(level) {
+            const map = { 1: '简单', 2: '较易', 3: '中等', 4: '较难', 5: '困难' };
+            return map[level] || '';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('zh-CN');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

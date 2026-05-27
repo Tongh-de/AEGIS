@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合规知识库管理 - CompFox</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh; padding: 20px; color: #e0e0e0;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            padding: 24px 30px; border-radius: 16px; margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; color: #e94560; margin-bottom: 6px; }
+        .header p { font-size: 13px; color: #888; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+        .tab {
+            flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
+            color: #888; cursor: pointer; text-align: center; font-size: 14px;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: rgba(233,69,96,0.1); color: #e94560; }
+        .tab.active { background: rgba(233,69,96,0.15); color: #e94560; border-color: rgba(233,69,96,0.3); }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 20px; margin-bottom: 16px;
+        }
+        .card h3 { font-size: 16px; color: #e94560; margin-bottom: 14px; }
+
+        .form-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .form-row input, .form-row textarea, .form-row select {
+            flex: 1; min-width: 150px; padding: 10px 14px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; color: #e0e0e0; font-size: 13px;
+        }
+        .form-row textarea { min-height: 100px; resize: vertical; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #e94560; }
+        input::placeholder, textarea::placeholder { color: #555; }
+
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 13px; font-weight: 500; transition: all 0.2s;
+        }
+        .btn-primary { background: #e94560; color: white; }
+        .btn-primary:hover { background: #d63852; }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: #ccc; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+        .btn-danger { background: rgba(233,69,96,0.2); color: #e94560; }
+        .btn-danger:hover { background: rgba(233,69,96,0.35); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+        .status { padding: 12px 16px; border-radius: 8px; margin-top: 10px; font-size: 13px; }
+        .status.success { background: rgba(46,213,115,0.15); color: #2ed573; }
+        .status.error { background: rgba(233,69,96,0.15); color: #e94560; }
+        .status.info { background: rgba(54,162,235,0.15); color: #36a2eb; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: #888; font-weight: 500; }
+        td { color: #ccc; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .result-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 14px; margin-bottom: 10px;
+        }
+        .result-card .meta { font-size: 11px; color: #666; margin-bottom: 4px; }
+        .result-card .content { font-size: 13px; color: #ccc; line-height: 1.6; }
+
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .metric-box {
+            background: rgba(255,255,255,0.03); border-radius: 8px; padding: 14px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .metric-box .label { font-size: 11px; color: #666; margin-bottom: 4px; }
+        .metric-box .value { font-size: 22px; color: #e94560; font-weight: 600; }
+        .metric-box.best { border-color: rgba(46,213,115,0.3); }
+        .metric-box.best .value { color: #2ed573; }
+
+        .compare-table td { font-family: monospace; }
+        .compare-table .winner { color: #2ed573; font-weight: 600; }
+        .compare-table .loser { color: #e94560; }
+
+        .loading { text-align: center; padding: 20px; color: #666; }
+        .spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.1); border-top-color: #e94560;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>合规知识库管理</h1>
+        <p>文档导入 · 法规检索 · RAG 评测 · 快照对比</p>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('docs')">文档管理</div>
+        <div class="tab" onclick="switchTab('search')">知识检索</div>
+        <div class="tab" onclick="switchTab('eval')">检索评测</div>
+        <div class="tab" onclick="switchTab('compare')">快照对比</div>
+    </div>
+
+    <!-- ========== 文档管理 ========== -->
+    <div id="panel-docs" class="panel active">
+        <div class="card">
+            <h3>导入文本</h3>
+            <div class="form-row">
+                <input id="import-doc-name" placeholder="文档名称" style="flex:1">
+                <input id="import-tags" placeholder="标签（逗号分隔）" style="flex:0.8">
+                <input id="import-date" placeholder="生效日期" style="flex:0.6">
+                <input id="import-version" placeholder="版本号" style="flex:0.5">
+            </div>
+            <textarea id="import-content" placeholder="粘贴法规文本内容..." rows="5"></textarea>
+            <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+                <button class="btn btn-primary" onclick="importText()">导入文本</button>
+                <span style="font-size:12px;color:#555;">或上传文件：</span>
+                <input type="file" id="file-input" accept=".pdf,.docx,.txt,.xlsx" style="display:none" onchange="importFile()">
+                <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">选择文件</button>
+                <input id="import-url" placeholder="或输入URL..." style="flex:1">
+                <button class="btn btn-secondary" onclick="importUrl()">抓取URL</button>
+            </div>
+            <div id="import-status"></div>
+        </div>
+
+        <div class="card">
+            <h3>文档列表 <button class="btn btn-sm btn-secondary" style="float:right" onclick="loadDocs()">刷新</button></h3>
+            <div id="doc-list"><div class="loading">加载中...</div></div>
+        </div>
+    </div>
+
+    <!-- ========== 知识检索 ========== -->
+    <div id="panel-search" class="panel">
+        <div class="card">
+            <h3>法规检索</h3>
+            <div class="form-row">
+                <input id="search-query" placeholder="输入检索查询...例如：反洗钱客户身份识别要求" style="flex:3">
+                <select id="search-source" style="flex:1"><option value="">全部类型</option></select>
+                <select id="search-limit" style="flex:0.5">
+                    <option value="3">3条</option><option value="5" selected>5条</option><option value="10">10条</option>
+                </select>
+                <button class="btn btn-primary" onclick="doSearch()">检索</button>
+            </div>
+            <div id="search-results"></div>
+        </div>
+    </div>
+
+    <!-- ========== 检索评测 ========== -->
+    <div id="panel-eval" class="panel">
+        <div class="card">
+            <h3>运行检索评测</h3>
+            <div class="form-row">
+                <select id="eval-dataset" style="flex:2"></select>
+                <select id="eval-granularity" style="flex:1">
+                    <option value="document">文档级</option>
+                    <option value="chunk">分块级</option>
+                </select>
+                <input id="eval-kvalues" value="3,5,10" placeholder="k值（逗号分隔）" style="flex:1">
+                <input id="eval-label" placeholder="快照标签（可选）" style="flex:1">
+            </div>
+            <div style="margin-top:10px;display:flex;gap:10px;align-items:center;">
+                <button class="btn btn-primary" onclick="runEval()">运行评测</button>
+                <label style="font-size:13px;color:#888;">
+                    <input type="checkbox" id="eval-save" checked> 保存结果快照
+                </label>
+            </div>
+            <div id="eval-status"></div>
+            <div id="eval-results"></div>
+        </div>
+    </div>
+
+    <!-- ========== 快照对比 ========== -->
+    <div id="panel-compare" class="panel">
+        <div class="card">
+            <h3>选择快照进行对比</h3>
+            <div class="form-row" style="align-items:flex-start">
+                <select id="snapshot1" style="flex:1"><option value="">-- 快照 1 --</option></select>
+                <select id="snapshot2" style="flex:1"><option value="">-- 快照 2 --</option></select>
+                <button class="btn btn-primary" onclick="doCompare()">对比</button>
+            </div>
+            <div id="compare-results"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = '/compfox';
+
+// ========== Tab switching ==========
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+    document.getElementById(`panel-${name}`).classList.add('active');
+    if (name === 'docs') loadDocs();
+    if (name === 'eval') loadDatasets();
+    if (name === 'compare') loadSnapshots();
+}
+
+// ========== 文档管理 ==========
+async function importText() {
+    const status = document.getElementById('import-status');
+    status.innerHTML = '<div class="status info">导入中...</div>';
+    const form = new FormData();
+    form.append('doc_name', document.getElementById('import-doc-name').value || '未命名文档');
+    form.append('content', document.getElementById('import-content').value);
+    form.append('tags', document.getElementById('import-tags').value);
+    form.append('effective_date', document.getElementById('import-date').value);
+    form.append('version', document.getElementById('import-version').value);
+    form.append('source_type', 'raw_text');
+    try {
+        const r = await fetch(`${API}/knowledge/import/text`, { method: 'POST', body: form });
+        const d = await r.json();
+        status.innerHTML = d.status_code === 200
+            ? `<div class="status success">导入成功！doc_id=${d.data.doc_id}, ${d.data.total_chunks} 个分块, ${d.data.total_chars} 字符</div>`
+            : `<div class="status error">导入失败：${d.msg || d.detail}</div>`;
+        loadDocs();
+    } catch(e) {
+        status.innerHTML = `<div class="status error">请求失败：${e.message}</div>`;
+    }
+}
+
+async function importFile() {
+    const file = document.getElementById('file-input').files[0];
+    if (!file) return;
+    const status = document.getElementById('import-status');
+    status.innerHTML = `<div class="status info">上传 ${file.name} (${(file.size/1024).toFixed(1)}KB)...</div>`;
+    const form = new FormData();
+    form.append('file', file);
+    form.append('tags', document.getElementById('import-tags').value);
+    form.append('effective_date', document.getElementById('import-date').value);
+    form.append('version', document.getElementById('import-version').value);
+    try {
+        const r = await fetch(`${API}/knowledge/import/file`, { method: 'POST', body: form });
+        const d = await r.json();
+        status.innerHTML = d.status_code === 200
+            ? `<div class="status success">导入成功！${JSON.stringify(d.data)}</div>`
+            : `<div class="status error">导入失败：${d.msg || d.detail}</div>`;
+        loadDocs();
+    } catch(e) {
+        status.innerHTML = `<div class="status error">上传失败：${e.message}</div>`;
+    }
+}
+
+async function importUrl() {
+    const url = document.getElementById('import-url').value.trim();
+    if (!url) return alert('请输入URL');
+    const status = document.getElementById('import-status');
+    status.innerHTML = '<div class="status info">抓取中...</div>';
+    const form = new FormData();
+    form.append('url', url);
+    form.append('tags', document.getElementById('import-tags').value);
+    try {
+        const r = await fetch(`${API}/knowledge/import/url`, { method: 'POST', body: form });
+        const d = await r.json();
+        status.innerHTML = d.status_code === 200
+            ? `<div class="status success">导入成功！${JSON.stringify(d.data)}</div>`
+            : `<div class="status error">导入失败：${d.msg || d.detail}</div>`;
+        loadDocs();
+    } catch(e) {
+        status.innerHTML = `<div class="status error">抓取失败：${e.message}</div>`;
+    }
+}
+
+async function loadDocs() {
+    const el = document.getElementById('doc-list');
+    try {
+        const r = await fetch(`${API}/knowledge/documents`);
+        const d = await r.json();
+        if (!d.data || d.data.length === 0) {
+            el.innerHTML = '<div class="status info">暂无文档。请先导入法规文本。</div>';
+            return;
+        }
+        el.innerHTML = `<table>
+            <tr><th>文档名称</th><th>类型</th><th>分块数</th><th>字符数</th><th>标签</th><th>版本</th><th>时间</th><th></th></tr>
+            ${d.data.map(doc => `<tr>
+                <td>${doc.doc_name}</td>
+                <td>${doc.source_type}</td>
+                <td>${doc.total_chunks || '-'}</td>
+                <td>${doc.total_chars?.toLocaleString() || '-'}</td>
+                <td>${doc.tags || '-'}</td>
+                <td>${doc.version || '-'}</td>
+                <td>${(doc.created_at || '').substring(0,10)}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteDoc('${doc.doc_id}')">删除</button></td>
+            </tr>`).join('')}
+        </table>`;
+    } catch(e) {
+        el.innerHTML = `<div class="status error">加载失败：${e.message}</div>`;
+    }
+}
+
+async function deleteDoc(docId) {
+    if (!confirm(`确认删除文档 ${docId}？`)) return;
+    try {
+        const r = await fetch(`${API}/knowledge/${docId}`, { method: 'DELETE' });
+        const d = await r.json();
+        alert(d.status_code === 200 ? '删除成功' : '删除失败：' + (d.msg || ''));
+        loadDocs();
+    } catch(e) { alert('请求失败：' + e.message); }
+}
+
+// ========== 知识检索 ==========
+async function doSearch() {
+    const query = document.getElementById('search-query').value.trim();
+    if (!query) return;
+    const el = document.getElementById('search-results');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div> 检索中...</div>';
+    const params = new URLSearchParams({
+        query, limit: document.getElementById('search-limit').value,
+        source_type: document.getElementById('search-source').value,
+    });
+    try {
+        const r = await fetch(`${API}/knowledge/search?${params}`);
+        const d = await r.json();
+        if (!d.data || d.data.length === 0) {
+            el.innerHTML = '<div class="status info">未找到相关法规内容。（若已导入文档仍无结果，Milvus 可能未运行）</div>';
+            return;
+        }
+        el.innerHTML = d.data.map((hit, i) => `
+            <div class="result-card">
+                <div class="meta">#${i+1} | ${hit.doc_name || '未知'} | chunk ${hit.chunk_index || '-'} | score: ${(hit.score||0).toFixed(4)}</div>
+                <div class="content">${escapeHtml(hit.content || '')}</div>
+            </div>
+        `).join('');
+    } catch(e) {
+        el.innerHTML = `<div class="status error">检索失败：${e.message}</div>`;
+    }
+}
+
+// ========== 检索评测 ==========
+async function loadDatasets() {
+    const sel = document.getElementById('eval-dataset');
+    try {
+        const r = await fetch(`${API}/evaluation/datasets`);
+        const d = await r.json();
+        sel.innerHTML = (d.data || []).map(ds =>
+            `<option value="${ds.name}">${ds.title} (${ds.num_queries}条)</option>`
+        ).join('') || '<option>无可用数据集</option>';
+    } catch(e) { sel.innerHTML = '<option>加载失败</option>'; }
+}
+
+async function runEval() {
+    const el = document.getElementById('eval-results');
+    const status = document.getElementById('eval-status');
+    status.innerHTML = '<div class="status info">评测运行中，请稍候...</div>';
+    el.innerHTML = '';
+    const body = {
+        dataset_name: document.getElementById('eval-dataset').value,
+        granularity: document.getElementById('eval-granularity').value,
+        k_values: document.getElementById('eval-kvalues').value.split(',').map(Number),
+        save_snapshot: document.getElementById('eval-save').checked,
+        snapshot_label: document.getElementById('eval-label').value || undefined,
+    };
+    try {
+        const r = await fetch(`${API}/evaluation/retrieval`, {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        const data = d.data;
+        if (data.error) {
+            status.innerHTML = `<div class="status info">${data.error}</div>`;
+            return;
+        }
+        status.innerHTML = `<div class="status success">评测完成：${data.evaluated_queries}/${data.total_queries} 个 query，${data.skipped_queries} 跳过</div>`;
+
+        const m = data.metrics || {};
+        el.innerHTML = `
+            <h4 style="margin:16px 0 10px;color:#888;">评测指标</h4>
+            <div class="metric-grid">
+                ${Object.entries(m).map(([k,v]) => `
+                    <div class="metric-box">
+                        <div class="label">${k}</div>
+                        <div class="value">${v.mean?.toFixed(4) || v}</div>
+                        ${v.std ? `<div class="label">±${v.std.toFixed(4)}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            ${data.per_query?.length ? `
+                <h4 style="margin:16px 0 10px;color:#888;">Per-Query 明细</h4>
+                <table>
+                    <tr><th>Query ID</th><th>P@5</th><th>R@5</th><th>MRR</th><th>NDCG@5</th></tr>
+                    ${data.per_query.map(q => `
+                        <tr>
+                            <td>${q.query_id || '-'}</td>
+                            <td>${(q['precision@5']||0).toFixed(4)}</td>
+                            <td>${(q['recall@5']||0).toFixed(4)}</td>
+                            <td>${(q['mrr']||0).toFixed(4)}</td>
+                            <td>${(q['ndcg@5']||0).toFixed(4)}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            ` : ''}
+        `;
+    } catch(e) {
+        status.innerHTML = `<div class="status error">评测失败：${e.message}</div>`;
+    }
+}
+
+// ========== 快照对比 ==========
+async function loadSnapshots() {
+    for (const id of ['snapshot1', 'snapshot2']) {
+        const sel = document.getElementById(id);
+        try {
+            const r = await fetch(`${API}/evaluation/snapshots`);
+            const d = await r.json();
+            sel.innerHTML = '<option value="">-- 选择快照 --</option>' +
+                (d.data || []).map(s => `<option value="${s.path}">${s.file} (${s.evaluated_queries}query, ${s.granularity})</option>`).join('');
+        } catch(e) { sel.innerHTML = '<option>加载失败</option>'; }
+    }
+}
+
+async function doCompare() {
+    const p1 = document.getElementById('snapshot1').value;
+    const p2 = document.getElementById('snapshot2').value;
+    if (!p1 || !p2) return alert('请选择两个快照');
+    const el = document.getElementById('compare-results');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div> 对比中...</div>';
+    try {
+        const r = await fetch(`${API}/evaluation/compare`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({snapshot_paths: [p1, p2], k_values: [3,5,10]})
+        });
+        const d = await r.json();
+        const data = d.data;
+        const configs = data.configs || [];
+        const best = data.best_by_metric || {};
+        const winnerFile = Object.values(best)[0]?.file || '';
+
+        el.innerHTML = `
+            <h4 style="margin:16px 0 10px;color:#888;">指标对比（绿色=较优，红色=较劣）</h4>
+            <table class="compare-table">
+                <tr><th>指标</th>${configs.map(c => `<th>${c.file}</th>`).join('')}</tr>
+                ${(data.metric_keys || []).map(key => {
+                    const vals = configs.map(c => c[key] ?? '-');
+                    const isBest1 = best[key]?.file === configs[0]?.file;
+                    const isBest2 = best[key]?.file === configs[1]?.file;
+                    return `<tr>
+                        <td>${key}</td>
+                        <td class="${isBest1 ? 'winner' : (isBest2 ? 'loser' : '')}">${typeof vals[0]==='number' ? vals[0].toFixed(4) : vals[0]}</td>
+                        <td class="${isBest2 ? 'winner' : (isBest1 ? 'loser' : '')}">${typeof vals[1]==='number' ? vals[1].toFixed(4) : vals[1]}</td>
+                    </tr>`;
+                }).join('')}
+            </table>
+            <h4 style="margin:16px 0 10px;color:#888;">各指标最优</h4>
+            <div class="metric-grid">
+                ${Object.entries(best).map(([k,v]) => `
+                    <div class="metric-box best">
+                        <div class="label">${k}</div>
+                        <div class="value">${v.value.toFixed(4)}</div>
+                        <div class="label">${v.file.substring(0,30)}...</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch(e) {
+        el.innerHTML = `<div class="status error">对比失败：${e.message}</div>`;
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Init
+loadDocs();
+</script>
+</body>
+</html>

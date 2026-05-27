@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合规题库管理</title>
+    <link rel="icon" type="image/x-icon" href="/compfox/static/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .search-select {
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input {
+            width: 200px;
+        }
+
+        .search-input:focus, .search-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-select {
+            background: white;
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e1e5e9;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .question-text-cell {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            border-color: #667eea;
+            background: #f7f9ff;
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Modal 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90vw;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 30px;
+            border-radius: 16px;
+            animation: modalShow 0.25s ease;
+        }
+
+        @keyframes modalShow {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            color: #333;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        /* 表单样式 */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 10px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        /* 选项输入样式 */
+        .options-input {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-label {
+            width: 30px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .option-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .option-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 隐藏区域 */
+        .hidden {
+            display: none;
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: #333;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        /* 操作按钮组 */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 难度标签 */
+        .difficulty-tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .difficulty-1 { background: #d4edda; color: #155724; }
+        .difficulty-2 { background: #d1ecf1; color: #0c5460; }
+        .difficulty-3 { background: #fff3cd; color: #856404; }
+        .difficulty-4 { background: #f8d7da; color: #721c24; }
+        .difficulty-5 { background: #6c757d; color: white; }
+
+        /* 题型标签 */
+        .type-tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .type-single_choice { background: #e7f3ff; color: #0056b3; }
+        .type-multiple_choice { background: #e7f3ff; color: #0056b3; }
+        .type-judgement { background: #f8d7da; color: #721c24; }
+        .type-fill_blank { background: #d4edda; color: #155724; }
+        .type-short_answer { background: #fff3cd; color: #856404; }
+        .type-essay { background: #e2e3e5; color: #383d41; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">
+            <img src="/compfox/static/wolin.jpg" alt="Logo" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+            合规题库管理
+        </h1>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchKeyword" placeholder="搜索题干...">
+                <select class="search-select" id="searchSubject">
+                    <option value="">全部合规领域</option>
+                </select>
+                <select class="search-select" id="searchType">
+                    <option value="">全部题型</option>
+                    <option value="single_choice">单选题</option>
+                    <option value="multiple_choice">多选题</option>
+                    <option value="judgement">判断题</option>
+                    <option value="fill_blank">填空题</option>
+                    <option value="short_answer">简答题</option>
+                    <option value="essay">论述题</option>
+                </select>
+                <select class="search-select" id="searchDifficulty">
+                    <option value="">全部难度</option>
+                    <option value="1">1 - 简单</option>
+                    <option value="2">2 - 较易</option>
+                    <option value="3">3 - 中等</option>
+                    <option value="4">4 - 较难</option>
+                    <option value="5">5 - 困难</option>
+                </select>
+                <button class="btn btn-primary" onclick="searchQuestions()">搜索</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/compfox/paper-manager" class="btn btn-secondary">📋 试卷管理</a>
+                <button class="btn btn-primary" onclick="showCreateModal()">➕ 新建考题</button>
+            </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="60">ID</th>
+                        <th width="100">合规领域</th>
+                        <th width="100">题型</th>
+                        <th width="80">难度</th>
+                        <th width="80">职级</th>
+                        <th>题干</th>
+                        <th width="100">答案</th>
+                        <th width="150">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="questionTableBody">
+                    <!-- 数据 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- 新建/编辑题目弹窗 -->
+    <div class="modal" id="questionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">新建考题</h2>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="questionForm">
+                <input type="hidden" id="editQuestionId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">合规领域 *</label>
+                        <select class="form-input" id="questionSubject" required>
+                            <option value="">请选择合规领域</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题型 *</label>
+                        <select class="form-input" id="questionType" required onchange="handleTypeChange()">
+                            <option value="">请选择题型</option>
+                            <option value="single_choice">单选题</option>
+                            <option value="multiple_choice">多选题</option>
+                            <option value="judgement">判断题</option>
+                            <option value="fill_blank">填空题</option>
+                            <option value="short_answer">简答题</option>
+                            <option value="essay">论述题</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">职级 *</label>
+                        <select class="form-input" id="questionGrade" required>
+                            <option value="">请选择职级</option>
+                            <option value="1">初级</option>
+                            <option value="2">中级</option>
+                            <option value="3">高级</option>
+                            <option value="4">管理层</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">难度等级</label>
+                        <select class="form-input" id="questionDifficulty">
+                            <option value="1">1 - 简单</option>
+                            <option value="2">2 - 较易</option>
+                            <option value="3" selected>3 - 中等</option>
+                            <option value="4">4 - 较难</option>
+                            <option value="5">5 - 困难</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">题干（纯文本） *</label>
+                        <textarea class="form-textarea" id="questionText" required placeholder="请输入题干内容，选择题选项请以 A. B. C. D. 格式另起一行填写"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">题干（HTML 格式，可选）</label>
+                        <textarea class="form-textarea" id="questionHtml" placeholder="支持公式、图片等 HTML 格式"></textarea>
+                    </div>
+                </div>
+
+                <!-- 选项输入区域（选择题/多选题） -->
+                <div class="form-row hidden" id="optionsSection">
+                    <div class="form-group full-width">
+                        <label class="form-label">选项（选择题专用）</label>
+                        <div class="options-input" id="optionsContainer">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">标准答案 *</label>
+                        <input type="text" class="form-input" id="questionAnswer" required placeholder="选择题请输入选项字母，如：A 或 AB">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">考题解析（可选）</label>
+                        <textarea class="form-textarea" id="questionAnalysis" placeholder="请输入考题解析"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label class="form-label">AI 判题提示词（可选）</label>
+                        <textarea class="form-textarea" id="questionAiJudgePrompt" placeholder="请输入 AI 判题时使用的提示词"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">知识点（可选）</label>
+                        <input type="text" class="form-input" id="questionKnowledgePoints" placeholder="如：反洗钱基础，可疑交易识别">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">解题提示（可选）</label>
+                        <input type="text" class="form-input" id="questionHint" placeholder="简短提示">
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e1e5e9;">
+                    <div class="form-group full-width" style="text-align: center;">
+                        <button type="submit" class="btn btn-primary" style="padding: 12px 50px; font-size: 16px;">
+                            保存考题
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentPage = 1;
+        let pageSize = 10;
+        let total = 0;
+        let subjectList = [];
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubjects();
+            loadQuestionList();
+        });
+
+        // 加载合规领域列表
+        function loadSubjects() {
+            fetch('/compfox/question/subjects')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        subjectList = data.data || [];
+                        fillSubjectSelects();
+                    }
+                })
+                .catch(err => {
+                    console.error('加载合规领域列表失败:', err);
+                    // 使用默认合规领域
+                    subjectList = [
+                        {code: 'aml', value: 'aml', desc: '反洗钱'},
+                        {code: 'data_security', value: 'data_security', desc: '数据安全'},
+                        {code: 'insider_trading', value: 'insider_trading', desc: '内幕交易'},
+                        {code: 'market_manipulation', value: 'market_manipulation', desc: '市场操纵'},
+                        {code: 'investor_protection', value: 'investor_protection', desc: '投资者保护'},
+                        {code: 'compliance_management', value: 'compliance_management', desc: '合规管理'},
+                        {code: 'code_of_conduct', value: 'code_of_conduct', desc: '行为准则'}
+                    ];
+                    fillSubjectSelects();
+                });
+        }
+
+        // 填充合规领域下拉框
+        function fillSubjectSelects() {
+            const selects = [
+                document.getElementById('searchSubject'),
+                document.getElementById('questionSubject')
+            ];
+
+            selects.forEach(select => {
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = select.id === 'searchSubject' ? '<option value="">全部合规领域</option>' : '<option value="">请选择合规领域</option>';
+                subjectList.forEach(subj => {
+                    const code = subj.value || (subj.code ? subj.code.replace('subject_', '') : subj);
+                    const name = subj.desc ? subj.desc.replace('CompFox - 合规领域-', '') : (subj.name || subj.value || subj.code || subj);
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+                if (currentValue) select.value = currentValue;
+            });
+        }
+
+        // 加载题目列表
+        function loadQuestionList(page = 1) {
+            currentPage = page;
+            let url = `/compfox/question/search?page=${page}&page_size=${pageSize}`;
+
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            const subject = document.getElementById('searchSubject').value;
+            const questionType = document.getElementById('searchType').value;
+            const difficulty = document.getElementById('searchDifficulty').value;
+
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            if (subject) url += `&subject=${subject}`;
+            if (questionType) url += `&question_type=${questionType}`;
+            if (difficulty) url += `&difficulty_level=${difficulty}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        renderTable(data.data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('加载失败', 'error');
+                });
+        }
+
+        // 搜索题目
+        function searchQuestions() {
+            loadQuestionList(1);
+        }
+
+        // 渲染表格
+        function renderTable(result) {
+            const tbody = document.getElementById('questionTableBody');
+
+            if (!result.list || result.list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = result.list.map(q => `
+                <tr>
+                    <td>${q.id}</td>
+                    <td>${getSubjectLabel(q.subject)}</td>
+                    <td><span class="type-tag type-${q.question_type}">${getTypeLabel(q.question_type)}</span></td>
+                    <td><span class="difficulty-tag difficulty-${q.difficulty_level}">${q.difficulty_level}</span></td>
+                    <td>${getGradeLabel(q.grade)}</td>
+                    <td class="question-text-cell" title="${escapeHtml(q.question_text)}">${escapeHtml(q.question_text?.substring(0, 80) || '')}</td>
+                    <td>${escapeHtml(q.answer?.substring(0, 20) || '')}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-sm btn-primary" onclick="editQuestion(${q.id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteQuestion(${q.id})">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            renderPagination(result.page, result.total, result.page_size);
+        }
+
+        // 渲染分页
+        function renderPagination(current, total, pageSize) {
+            const totalPages = Math.ceil(total / pageSize);
+            const pagination = document.getElementById('pagination');
+
+            let html = '';
+
+            // 上一页
+            html += `<button class="page-btn" ${current === 1 ? 'disabled' : ''} onclick="loadQuestionList(${current - 1})">上一页</button>`;
+
+            // 页码
+            let startPage = Math.max(1, current - 2);
+            let endPage = Math.min(totalPages, current + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="loadQuestionList(${i})">${i}</button>`;
+            }
+
+            // 下一页
+            html += `<button class="page-btn" ${current === totalPages ? 'disabled' : ''} onclick="loadQuestionList(${current + 1})">下一页</button>`;
+
+            pagination.innerHTML = html;
+        }
+
+        // 显示新建弹窗
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = '新建考题';
+            document.getElementById('questionForm').reset();
+            document.getElementById('editQuestionId').value = '';
+            document.getElementById('optionsSection').classList.add('hidden');
+            document.getElementById('questionModal').classList.add('show');
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('questionModal').classList.remove('show');
+        }
+
+        // 编辑题目
+        function editQuestion(id) {
+            fetch(`/compfox/question/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        const q = data.data;
+                        document.getElementById('modalTitle').textContent = '编辑考题';
+                        document.getElementById('editQuestionId').value = id;
+                        document.getElementById('questionSubject').value = q.subject || '';
+                        document.getElementById('questionType').value = q.question_type || '';
+                        document.getElementById('questionGrade').value = q.grade || '';
+                        document.getElementById('questionDifficulty').value = q.difficulty_level || 3;
+                        document.getElementById('questionText').value = q.question_text || '';
+                        document.getElementById('questionHtml').value = q.question_html || '';
+                        document.getElementById('questionAnswer').value = q.answer || '';
+                        document.getElementById('questionAnalysis').value = q.analysis || '';
+                        document.getElementById('questionAiJudgePrompt').value = q.ai_judge_prompt || '';
+                        document.getElementById('questionKnowledgePoints').value = q.knowledge_points || '';
+                        document.getElementById('questionHint').value = q.hint || '';
+
+                        handleTypeChange();
+                        document.getElementById('questionModal').classList.add('show');
+                    } else {
+                        showToast('加载考题失败', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('网络错误', 'error');
+                });
+        }
+
+        // 处理题型变化
+        function handleTypeChange() {
+            const type = document.getElementById('questionType').value;
+            const optionsSection = document.getElementById('optionsSection');
+            const answerInput = document.getElementById('questionAnswer');
+
+            if (type === 'single_choice' || type === 'multiple_choice') {
+                optionsSection.classList.remove('hidden');
+                renderOptionsInput(type);
+                answerInput.placeholder = type === 'single_choice' ? '请输入正确选项字母，如：A' : '请输入正确选项字母，如：AB';
+            } else if (type === 'judgement') {
+                optionsSection.classList.add('hidden');
+                answerInput.placeholder = '请输入：true 或 false';
+            } else {
+                optionsSection.classList.add('hidden');
+                answerInput.placeholder = '请输入答案';
+            }
+        }
+
+        // 渲染选项输入
+        function renderOptionsInput(type) {
+            const container = document.getElementById('optionsContainer');
+            const questionText = document.getElementById('questionText').value;
+
+            // 从题干中提取选项
+            const options = extractOptions(questionText);
+
+            const optionLetters = type === 'multiple_choice' ? ['A', 'B', 'C', 'D', 'E', 'F'] : ['A', 'B', 'C', 'D'];
+
+            let html = '';
+            optionLetters.forEach(letter => {
+                const optionContent = options[letter] || '';
+                html += `
+                    <div class="option-item">
+                        <span class="option-label">${letter}.</span>
+                        <input type="text" class="option-input" data-letter="${letter}" value="${escapeHtml(optionContent)}" placeholder="请输入选项内容">
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 从题干中提取选项
+        function extractOptions(questionText) {
+            const options = {};
+            const lines = questionText ? questionText.split('\n') : [];
+            const optionPattern = /^([A-F])\s*[\.\、]\s*(.+)$/;
+
+            lines.forEach(line => {
+                const match = line.match(optionPattern);
+                if (match) {
+                    options[match[1]] = match[2].trim();
+                }
+            });
+
+            return options;
+        }
+
+        // 保存题目
+        document.getElementById('questionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const editId = document.getElementById('editQuestionId').value;
+            const type = document.getElementById('questionType').value;
+
+            // 构建题干（选择题需要合并选项）
+            let questionText = document.getElementById('questionText').value.trim();
+
+            if (type === 'single_choice' || type === 'multiple_choice') {
+                // 移除原有选项
+                const lines = questionText.split('\n').filter(line => !line.match(/^([A-F])\s*[\.\、]\s*.+$/));
+                questionText = lines.join('\n');
+
+                // 添加新选项
+                const optionInputs = document.querySelectorAll('.option-input');
+                optionInputs.forEach(input => {
+                    if (input.value.trim()) {
+                        questionText += `\n${input.dataset.letter}. ${input.value.trim()}`;
+                    }
+                });
+            }
+
+            // 构建表单数据
+            const params = new URLSearchParams();
+            params.append('question_text', questionText);
+            params.append('question_html', document.getElementById('questionHtml').value.trim());
+            params.append('answer', document.getElementById('questionAnswer').value.trim());
+            params.append('analysis', document.getElementById('questionAnalysis').value.trim());
+            params.append('ai_judge_prompt', document.getElementById('questionAiJudgePrompt').value.trim());
+            params.append('knowledge_points', document.getElementById('questionKnowledgePoints').value.trim());
+            params.append('hint', document.getElementById('questionHint').value.trim());
+            params.append('subject', document.getElementById('questionSubject').value);
+            params.append('question_type', type);
+            params.append('grade', document.getElementById('questionGrade').value);
+            params.append('difficulty_level', document.getElementById('questionDifficulty').value);
+
+            const url = editId ? `/compfox/question/${editId}` : '/compfox/question';
+            const method = editId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status_code === 200) {
+                    showToast(editId ? '更新成功' : '创建成功', 'success');
+                    closeModal();
+                    loadQuestionList(currentPage);
+                } else {
+                    showToast('操作失败：' + (data.msg || '未知错误'), 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showToast('网络错误', 'error');
+            });
+        });
+
+        // 删除题目
+        function deleteQuestion(id) {
+            if (!confirm('确定要删除该考题吗？')) return;
+
+            fetch(`/compfox/question/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status_code === 200) {
+                    showToast('删除成功', 'success');
+                    loadQuestionList(currentPage);
+                } else {
+                    showToast('删除失败：' + (data.msg || '未知错误'), 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showToast('网络错误', 'error');
+            });
+        }
+
+        // 工具函数
+        function getSubjectLabel(subject) {
+            if (!subject) return '-';
+            const map = {
+                'aml': '反洗钱', 'data_security': '数据安全', 'insider_trading': '内幕交易',
+                'market_manipulation': '市场操纵', 'investor_protection': '投资者保护',
+                'compliance_management': '合规管理', 'code_of_conduct': '行为准则'
+            };
+            return map[subject] || subject;
+        }
+
+        function getTypeLabel(type) {
+            const map = {
+                'single_choice': '单选', 'multiple_choice': '多选', 'judgement': '判断',
+                'fill_blank': '填空', 'short_answer': '简答', 'essay': '论述'
+            };
+            return map[type] || type || '';
+        }
+
+        function getGradeLabel(grade) {
+            if (!grade) return '-';
+            const map = {
+                1: '初级', 2: '中级', 3: '高级', 4: '管理层'
+            };
+            return map[grade] || grade;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Toast 提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('questionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线做题系统</title>
+    <link rel="icon" type="image/x-icon" href="/education/static/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* 开始界面 */
+        .start-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .start-btn {
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 答题界面 */
+        .question-screen {
+            display: none;
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .tag {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tag.subject {
+            background: #e7f3ff;
+            color: #0056b3;
+        }
+
+        .tag.type {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .tag.difficulty {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .question-content {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px solid #e1e5e9;
+        }
+
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* 选择题选项 */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f7f9ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #e7f3ff;
+            color: #0056b3;
+        }
+
+        .option input[type="checkbox"],
+        .option input[type="radio"] {
+            margin-right: 15px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .option-text {
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* 输入框样式 */
+        .answer-input {
+            margin-top: 20px;
+        }
+
+        .answer-input textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s ease;
+        }
+
+        .answer-input textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .answer-input input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .answer-input input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 判断题选项 */
+        .judge-options {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .judge-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .judge-btn:hover {
+            border-color: #667eea;
+            background: #f7f9ff;
+        }
+
+        .judge-btn.selected {
+            border-color: #667eea;
+            background: #e7f3ff;
+            color: #0056b3;
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .submit-btn,
+        .next-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .next-btn {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .submit-btn:hover:not(:disabled),
+        .next-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled,
+        .next-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 结果显示 */
+        .result {
+            display: none;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        /* 当添加 success 或 error 类时自动显示 */
+        .result.success,
+        .result.error {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result-content {
+            margin-top: 15px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .result-text {
+            line-height: 1.6;
+        }
+
+        .result-score {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .result-score.correct {
+            color: #28a745;
+        }
+
+        .result-score.wrong {
+            color: #dc3545;
+        }
+
+        .result-score.partial {
+            color: #ffc107;
+        }
+
+        .explanation {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ===== Modal 弹窗 ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal:active {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-content {
+            background: white;
+            width: 60vw;
+            max-width: 95%;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin: 8vh auto;
+            padding: 30px;
+            border-radius: 12px;
+            animation: modalShow 0.25s ease;
+            cursor: default;
+        }
+
+        /* 自定义滚动条 */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 22px;
+        }
+
+        @keyframes modalShow {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 登录界面 */
+        .login-screen {
+            display: block;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+            transition: border-color 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">
+            <img src="/education/static/wolin.jpg" alt="Logo" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+            📝 在线做题系统
+        </h1>
+
+        <!-- 登录界面 -->
+        <div class="login-screen" id="loginScreen">
+            <p style="font-size: 16px; color: #666; margin-bottom: 20px;">
+                请输入您的用户名开始做题
+            </p>
+            <input type="text" class="login-input" id="usernameInput" placeholder="请输入用户名">
+            <button class="start-btn" id="loginBtn" onclick="login()">
+                ✓ 进入系统
+            </button>
+        </div>
+
+        <!-- 开始界面 -->
+        <div class="start-screen" id="startScreen">
+            <p style="font-size: 16px; color: #666; margin-bottom: 20px;">
+                系统将随机为您生成一道题目，完成后AI将自动判题
+            </p>
+            <button class="start-btn" id="startBtn" onclick="startQuestion()">
+                🚀 开始做题
+            </button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">正在获取题目...</p>
+        </div>
+
+        <!-- 答题界面 -->
+        <div class="question-screen" id="questionScreen">
+            <div class="question-meta">
+                <span class="tag subject" id="subjectTag">科目</span>
+                <span class="tag type" id="typeTag">题型</span>
+                <span class="tag difficulty" id="difficultyTag">难度</span>
+            </div>
+
+            <div class="question-content">
+                <div class="question-text" id="questionText"></div>
+            </div>
+
+            <!-- 答案输入区域 -->
+            <div id="answerArea"></div>
+
+            <div class="button-group">
+                <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">
+                    ✓ 提交答案
+                </button>
+                <button class="next-btn" id="nextBtn" onclick="nextQuestion()" style="display: none;">
+                    🔄 继续做题
+                </button>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <!-- 判题结果弹窗 -->
+    <div id="resultModal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span>判题结果</span>
+                <span class="close-btn" onclick="nextQuestion()">×</span>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = null;
+        let userAnswer = null;
+        let username = null;
+
+        // 登录
+        function login() {
+            const input = document.getElementById('usernameInput');
+            username = input.value.trim();
+
+            if (!username) {
+                alert('请输入用户名');
+                return;
+            }
+
+            // 隐藏登录界面，显示开始界面
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+        }
+
+        // 支持回车键登录
+        document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // 题型映射
+        const questionTypeMap = {
+            'single_choice': '单选题',
+            'multiple_choice': '多选题',
+            'fill_blank': '填空题',
+            'short_answer': '简答题',
+            'essay': '论述题',
+            'judgement': '判断题'
+        };
+
+        // 难度映射
+        const difficultyMap = {
+            1: '简单',
+            2: '较简单',
+            3: '中等',
+            4: '较困难',
+            5: '困难'
+        };
+
+        // 从题干中提取选项
+        function extractOptions(questionText) {
+            const options = {};
+
+            // 按行分割题干
+            const lines = questionText.split('\n');
+
+            // 题干内容（排除选项行）
+            let contentLines = [];
+            // 选项内容
+            const optionPattern = /^([A-D])\.\s*(.+)$/;
+
+            lines.forEach(line => {
+                const match = line.match(optionPattern);
+                if (match) {
+                    // 这是一个选项行
+                    const optionLetter = match[1];
+                    const optionContent = match[2].trim();
+                    options[optionLetter] = optionContent;
+                } else if (line.trim()) {
+                    // 这是题干内容
+                    contentLines.push(line);
+                }
+            });
+
+            // 返回题干内容和选项
+            return {
+                question: contentLines.join('\n'),
+                options: options
+            };
+        }
+
+        // 开始做题
+        async function startQuestion() {
+            showLoading('正在获取题目...');
+            try {
+                const url = username ? `/education/question/random_one?user_id=${encodeURIComponent(username)}` : '/education/question/random_one';
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status_code === 200 && data.data) {
+                    currentQuestion = data.data;
+                    displayQuestion(currentQuestion);
+                } else {
+                    showError('获取题目失败，请重试');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('网络错误，请检查网络连接');
+            }
+        }
+
+        // 显示题目
+        function displayQuestion(question) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('questionScreen').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'block';
+            document.getElementById('nextBtn').style.display = 'none';
+
+            // 显示题目元信息
+            document.getElementById('subjectTag').textContent = question.subject || '未知';
+            document.getElementById('typeTag').textContent = questionTypeMap[question.question_type] || '未知';
+            document.getElementById('difficultyTag').textContent = difficultyMap[question.difficulty_level] || '未知';
+
+            // 提取选项（针对选择题）
+            const extracted = extractOptions(question.question_text);
+            const questionContent = extracted.question;
+            const questionOptions = extracted.options;
+
+            // 显示题目内容（只显示题干，不显示选项）
+            document.getElementById('questionText').textContent = questionContent;
+
+            // 根据题型显示不同的输入方式
+            const answerArea = document.getElementById('answerArea');
+            answerArea.innerHTML = '';
+
+            if (question.question_type === 'single_choice') {
+                displaySingleChoice(answerArea, questionOptions);
+            } else if (question.question_type === 'multiple_choice') {
+                displayMultipleChoice(answerArea, questionOptions);
+            } else if (question.question_type === 'fill_blank') {
+                displayFillBlank(answerArea);
+            } else if (question.question_type === 'short_answer') {
+                displayShortAnswer(answerArea);
+            } else if (question.question_type === 'essay') {
+                displayEssay(answerArea);
+            } else if (question.question_type === 'judgement') {
+                displayJudgement(answerArea);
+            } else {
+                answerArea.innerHTML = '<p style="color: #666;">暂不支持该题型</p>';
+            }
+        }
+
+        // 单选题
+        function displaySingleChoice(container, options) {
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+
+            // 如果提取到选项，使用提取的选项，否则显示空选项
+            const optionLetters = Object.keys(options).length > 0 ? Object.keys(options) : ['A', 'B', 'C', 'D'];
+
+            optionLetters.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.innerHTML = `
+                    <input type="radio" name="answer" value="${opt}">
+                    <span>${opt}.</span>
+                    <span class="option-text" style="flex: 1; margin-left: 10px;">${options[opt] || ''}</span>
+                `;
+                div.addEventListener('click', (e) => {
+                    if (e.target.type !== 'radio') {
+                        const radio = div.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                        div.classList.add('selected');
+                    }
+                });
+                optionsDiv.appendChild(div);
+            });
+
+            container.appendChild(optionsDiv);
+        }
+
+        // 多选题
+        function displayMultipleChoice(container, options) {
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+
+            // 如果提取到选项，使用提取的选项，否则显示空选项
+            const optionLetters = Object.keys(options).length > 0 ? Object.keys(options) : ['A', 'B', 'C', 'D', 'E', 'F'];
+
+            optionLetters.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.innerHTML = `
+                    <input type="checkbox" name="answer" value="${opt}">
+                    <span>${opt}.</span>
+                    <span class="option-text" style="flex: 1; margin-left: 10px;">${options[opt] || ''}</span>
+                `;
+                div.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = div.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        div.classList.toggle('selected', checkbox.checked);
+                    }
+                });
+                optionsDiv.appendChild(div);
+            });
+
+            container.appendChild(optionsDiv);
+        }
+
+        // 填空题
+        function displayFillBlank(container) {
+            const div = document.createElement('div');
+            div.className = 'answer-input';
+            div.innerHTML = `
+                <input type="text" id="fillBlankInput" placeholder="请输入答案">
+            `;
+            container.appendChild(div);
+        }
+
+        // 简答题
+        function displayShortAnswer(container) {
+            const div = document.createElement('div');
+            div.className = 'answer-input';
+            div.innerHTML = `
+                <textarea id="shortAnswerInput" placeholder="请输入答案（200字以内）" maxlength="200"></textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        // 论述题
+        function displayEssay(container) {
+            const div = document.createElement('div');
+            div.className = 'answer-input';
+            div.innerHTML = `
+                <textarea id="essayInput" placeholder="请输入答案（详细阐述您的观点）" style="min-height: 200px;"></textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        // 判断题
+        function displayJudgement(container) {
+            const div = document.createElement('div');
+            div.className = 'judge-options';
+            div.innerHTML = `
+                <div class="judge-btn" data-value="true" onclick="selectJudgement(this)">正确</div>
+                <div class="judge-btn" data-value="false" onclick="selectJudgement(this)">错误</div>
+            `;
+            container.appendChild(div);
+        }
+
+        // 选择判断题答案
+        function selectJudgement(element) {
+            document.querySelectorAll('.judge-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            userAnswer = element.dataset.value;
+        }
+
+        // 提交答案
+        async function submitAnswer() {
+            // 收集用户答案
+            userAnswer = collectUserAnswer();
+
+            if (!userAnswer) {
+                showError('请先填写答案');
+                return;
+            }
+
+            showLoading('正在AI判题中...');
+
+            try {
+                const response = await fetch('/education/question/ai_judge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question_id: currentQuestion.id,
+                        answer: userAnswer,
+                        source: 'practice',
+                        user_id: username
+                    })
+                });
+
+                const data = await response.json();
+                console.log('AI Judge response:', data); // 添加调试日志
+
+                if (data.status_code === 200) {
+                    console.log('Calling displayResult with:', data.data); // 添加调试日志
+                    displayResult(data.data);
+                } else {
+                    showError('判题失败：' + (data.msg || '未知错误'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('网络错误，请检查网络连接');
+            }
+        }
+
+        // 收集用户答案
+        function collectUserAnswer() {
+            const type = currentQuestion.question_type;
+
+            if (type === 'single_choice') {
+                const selected = document.querySelector('input[name="answer"]:checked');
+                if (selected) {
+                    return selected.value;
+                }
+                return null;
+            }
+
+            if (type === 'multiple_choice') {
+                const selected = document.querySelectorAll('input[name="answer"]:checked');
+                if (selected.length === 0) return null;
+
+                const answers = [];
+                selected.forEach(checkbox => {
+                    answers.push(checkbox.value);
+                });
+                return answers.join(',');
+            }
+
+            if (type === 'fill_blank') {
+                return document.getElementById('fillBlankInput').value;
+            }
+
+            if (type === 'short_answer') {
+                return document.getElementById('shortAnswerInput').value;
+            }
+
+            if (type === 'essay') {
+                return document.getElementById('essayInput').value;
+            }
+
+            if (type === 'judgement') {
+                return userAnswer;
+            }
+
+            return null;
+        }
+
+        // 显示结果
+        function displayResult(data) {
+            console.log('displayResult called with:', data);
+
+            // 隐藏加载状态
+            document.getElementById('loading').style.display = 'none';
+
+            // 切换按钮
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'block';
+
+            // 计算得分等级
+            let scoreClass = 'partial';
+            if (data.score >= 0.8) {
+                scoreClass = 'correct';
+            } else if (data.score < 0.5) {
+                scoreClass = 'wrong';
+            }
+
+            // 构建结果 HTML（使用弹窗显示）
+            const html = `
+                <div class="result-content">
+                    <div class="result-score ${scoreClass}">
+                        得分率：${(data.score * 100).toFixed(0)}%
+                    </div>
+                    <div class="result-text" style="margin-top:10px;">
+                        ${data.ai_result}
+                    </div>
+                    <button class="start-btn" onclick="nextQuestion()" style="margin-top:20px;width:100%;">
+                        🔄 继续做题
+                    </button>
+                </div>
+            `;
+
+            // 🚀 使用弹窗显示（不会撑开页面）
+            showModal(html);
+
+            console.log('Result displayed in modal');
+        }
+
+        // 显示 Modal 弹窗
+        function showModal(html) {
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('resultModal').style.display = 'block';
+        }
+
+        // 关闭 Modal 弹窗
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        // 下一题
+        function nextQuestion() {
+            closeModal(); // 关闭弹窗
+            userAnswer = null;
+            startQuestion();
+        }
+
+        // 显示加载
+        function showLoading(text) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('questionScreen').style.display = 'none';
+        }
+
+        // 显示错误
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result error';
+            resultDiv.innerHTML = `<div class="result-title">错误</div><div class="result-text">${message}</div>`;
+        }
+    </script>
+</body>
+</html>

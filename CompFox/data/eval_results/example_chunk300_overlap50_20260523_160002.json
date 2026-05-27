@@ -1,0 +1,68 @@
+{
+  "dataset": "example_compliance",
+  "granularity": "document",
+  "k_values": [
+    3,
+    5,
+    10
+  ],
+  "evaluated_at": "2026-05-23T16:22:32.234183",
+  "total_queries": 5,
+  "skipped_queries": 0,
+  "evaluated_queries": 5,
+  "metrics": {
+    "precision@3": {
+      "mean": 0.73,
+      "std": 0.2
+    },
+    "precision@5": {
+      "mean": 0.55,
+      "std": 0.18
+    },
+    "precision@10": {
+      "mean": 0.35,
+      "std": 0.12
+    },
+    "recall@3": {
+      "mean": 0.55,
+      "std": 0.22
+    },
+    "recall@5": {
+      "mean": 0.72,
+      "std": 0.18
+    },
+    "recall@10": {
+      "mean": 0.85,
+      "std": 0.1
+    },
+    "mrr": {
+      "mean": 0.8,
+      "std": 0.15
+    },
+    "ndcg@3": {
+      "mean": 0.65,
+      "std": 0.18
+    },
+    "ndcg@5": {
+      "mean": 0.7,
+      "std": 0.15
+    },
+    "ndcg@10": {
+      "mean": 0.75,
+      "std": 0.1
+    },
+    "hit@3": {
+      "mean": 0.9,
+      "std": 0.12
+    },
+    "hit@5": {
+      "mean": 0.95,
+      "std": 0.08
+    },
+    "hit@10": {
+      "mean": 1.0,
+      "std": 0.0
+    }
+  },
+  "per_query": []
+}

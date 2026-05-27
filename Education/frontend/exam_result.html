@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试结果</title>
+    <link rel="icon" type="image/x-icon" href="/education/static/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* 结果卡片 */
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .score-display.excellent {
+            color: #28a745;
+        }
+
+        .score-display.good {
+            color: #20c997;
+        }
+
+        .score-display.average {
+            color: #ffc107;
+        }
+
+        .score-display.poor {
+            color: #dc3545;
+        }
+
+        .score-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            text-align: center;
+        }
+
+        .meta-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .meta-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* AI 总结 */
+        .ai-summary {
+            background: #e7f3ff;
+            border-left: 4px solid #0056b3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .ai-summary h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #0056b3;
+        }
+
+        .summary-section {
+            margin-bottom: 15px;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .summary-content {
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .suggestions {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .suggestions li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .suggestions li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        /* 得分详情 */
+        .score-details {
+            margin-top: 20px;
+        }
+
+        .score-details h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .detail-item.correct {
+            border-left: 4px solid #28a745;
+        }
+
+        .detail-item.wrong {
+            border-left: 4px solid #dc3545;
+        }
+
+        .detail-item.partial {
+            border-left: 4px solid #ffc107;
+        }
+
+        .detail-question {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .detail-score {
+            font-weight: 600;
+        }
+
+        .detail-score.full {
+            color: #28a745;
+        }
+
+        .detail-score.zero {
+            color: #dc3545;
+        }
+
+        .detail-score.partial {
+            color: #ffc107;
+        }
+
+        /* 展开详情样式 */
+        .detail-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .detail-item:hover {
+            background: #f8f9fa;
+        }
+
+        .detail-arrow {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+            fill: #666;
+        }
+
+        .detail-item.expanded .detail-arrow {
+            transform: rotate(90deg);
+        }
+
+        .detail-content {
+            display: none;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .detail-item.expanded + .detail-content {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 12px;
+            background: #fff;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .section-content.user-answer {
+            border-left: 3px solid #667eea;
+        }
+
+        .section-content.ai-comment {
+            border-left: 3px solid #28a745;
+        }
+
+        .section-content.ai-analysis {
+            border-left: 3px solid #0056b3;
+        }
+
+        .option-line {
+            display: flex;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .option-line:last-child {
+            border-bottom: none;
+        }
+
+        .option-letter {
+            font-weight: 600;
+            min-width: 25px;
+            color: #667eea;
+        }
+
+        /* 按钮 */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error-message {
+            padding: 20px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">
+            <img src="/education/static/wolin.jpg" alt="Logo" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+            考试结果
+        </h1>
+
+        <!-- 加载状态 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>正在加载考试结果...</span>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+        <!-- 结果内容 -->
+        <div id="resultContent" style="display: none;">
+            <!-- 成绩卡片 -->
+            <div class="result-card">
+                <div class="result-header">
+                    <h2 id="paperName" style="font-size: 22px; color: #333;"></h2>
+                    <div class="score-display" id="scoreDisplay"></div>
+                    <div class="score-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">总分</div>
+                            <div class="meta-value" id="totalScore"></div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">满分</div>
+                            <div class="meta-value" id="maxScore"></div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">得分率</div>
+                            <div class="meta-value" id="scoreRate"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI 总结 -->
+                <div class="ai-summary" id="aiSummary" style="display: none;">
+                    <h3>📊 AI 考试总结</h3>
+                    <div class="summary-section">
+                        <div class="summary-label">成绩总结</div>
+                        <div class="summary-content" id="aiSummaryText"></div>
+                    </div>
+                    <div class="summary-section">
+                        <div class="summary-label">知识点梳理</div>
+                        <div class="summary-content" id="aiKnowledgePoints"></div>
+                    </div>
+                    <div class="summary-section">
+                        <div class="summary-label">学习建议</div>
+                        <ul class="suggestions" id="aiSuggestions"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 得分详情 -->
+            <div class="result-card score-details">
+                <h3>📝 得分详情</h3>
+                <div id="scoreDetailsList"></div>
+            </div>
+
+            <!-- 按钮组 -->
+            <div class="btn-group">
+                <a href="javascript:window.history.back()" class="btn btn-secondary">返回上一页</a>
+                <a href="/edu/history" class="btn btn-primary">查看历史记录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let examId = null;
+        let examUuid = null;
+        let questionDetailsCache = {}; // 缓存题目详情
+
+        // 从 URL 获取考试 ID 或 UUID
+        function getExamParamsFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            examId = params.get('exam_id');
+            examUuid = params.get('exam_uuid');
+            return { examId, examUuid };
+        }
+
+        // 加载考试结果
+        function loadExamResult() {
+            const { examId: idFromUrl, examUuid: uuidFromUrl } = getExamParamsFromUrl();
+
+            // 优先使用 exam_id，如果没有则使用 exam_uuid
+            if (idFromUrl) {
+                examId = idFromUrl;
+            } else if (uuidFromUrl) {
+                examUuid = uuidFromUrl;
+            } else {
+                showError('考试 ID 不存在');
+                return;
+            }
+
+            // 构建 API 请求 URL
+            let apiUrl = '/education/exam/result?';
+            if (examId) {
+                apiUrl += `exam_id=${examId}`;
+            } else {
+                apiUrl += `exam_uuid=${examUuid}`;
+            }
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        renderResult(data.data);
+                        // 加载题目详情（用于展开）
+                        loadQuestionDetails();
+                    } else {
+                        showError('加载失败：' + (data.msg || '未知错误'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showError('网络错误，请检查网络连接');
+                });
+        }
+
+        // 加载题目详情
+        function loadQuestionDetails() {
+            let apiUrl = '/education/exam/result/detail?';
+            if (examId) {
+                apiUrl += `exam_id=${examId}`;
+            } else if (examUuid) {
+                apiUrl += `exam_uuid=${examUuid}`;
+            } else {
+                return;
+            }
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200 && data.data) {
+                        questionDetailsCache = data.data.question_details || {};
+                    }
+                })
+                .catch(err => {
+                    console.error('加载题目详情失败:', err);
+                });
+        }
+
+        // 渲染结果
+        function renderResult(result) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultContent').style.display = 'block';
+
+            // 基本信息
+            document.getElementById('paperName').textContent = result.paper_name;
+
+            // 分数显示
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const scoreRate = result.score_rate || 0;
+            scoreDisplay.textContent = `${result.total_score} / ${result.max_score}`;
+
+            // 根据得分率设置颜色
+            scoreDisplay.className = 'score-display';
+            if (scoreRate >= 0.8) {
+                scoreDisplay.classList.add('excellent');
+            } else if (scoreRate >= 0.6) {
+                scoreDisplay.classList.add('good');
+            } else if (scoreRate >= 0.4) {
+                scoreDisplay.classList.add('average');
+            } else {
+                scoreDisplay.classList.add('poor');
+            }
+
+            document.getElementById('totalScore').textContent = result.total_score;
+            document.getElementById('maxScore').textContent = result.max_score;
+            document.getElementById('scoreRate').textContent = `${(scoreRate * 100).toFixed(1)}%`;
+
+            // AI 总结
+            if (result.ai_summary) {
+                const aiSummary = result.ai_summary;
+                document.getElementById('aiSummary').style.display = 'block';
+
+                if (aiSummary.summary) {
+                    document.getElementById('aiSummaryText').textContent = aiSummary.summary;
+                } else {
+                    document.getElementById('aiSummaryText').parentNode.style.display = 'none';
+                }
+
+                if (aiSummary.knowledge_points) {
+                    document.getElementById('aiKnowledgePoints').textContent = aiSummary.knowledge_points;
+                } else {
+                    document.getElementById('aiKnowledgePoints').parentNode.style.display = 'none';
+                }
+
+                if (aiSummary.suggestions && aiSummary.suggestions.length > 0) {
+                    const suggestionsHtml = aiSummary.suggestions.map(s => `<li>${s}</li>`).join('');
+                    document.getElementById('aiSuggestions').innerHTML = suggestionsHtml;
+                } else {
+                    document.getElementById('aiSuggestions').parentNode.style.display = 'none';
+                }
+            }
+
+            // 得分详情
+            if (result.score_details) {
+                const detailsList = document.getElementById('scoreDetailsList');
+                let detailsHtml = '';
+                let questionIndex = 1;
+
+                for (const [qId, detail] of Object.entries(result.score_details)) {
+                    const scoreClass = detail.score === detail.max_score ? 'full' :
+                                      (detail.score === 0 ? 'zero' : 'partial');
+                    const itemClass = detail.score === detail.max_score ? 'correct' :
+                                     (detail.score === 0 ? 'wrong' : 'partial');
+
+                    detailsHtml += `
+                        <div class="detail-item ${itemClass}" id="detailItem${qId}" onclick="toggleDetail(${qId})">
+                            <svg class="detail-arrow" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span class="detail-question">第${questionIndex}题 (id:${qId})</span>
+                            <span class="detail-score ${scoreClass}">
+                                ${detail.score} / ${detail.max_score} 分
+                            </span>
+                        </div>
+                        <div class="detail-content" id="detailContent${qId}">
+                            <div class="loading-spinner" id="detailLoading${qId}" style="display: none;">
+                                加载中...
+                            </div>
+                            <div id="detailInner${qId}"></div>
+                        </div>
+                    `;
+                    questionIndex++;
+                }
+
+                detailsList.innerHTML = detailsHtml;
+            }
+        }
+
+        // 展开/收起详情
+        function toggleDetail(questionId) {
+            const detailItem = document.getElementById(`detailItem${questionId}`);
+            const detailInner = document.getElementById(`detailInner${questionId}`);
+
+            if (!detailItem) return;
+
+            // 切换展开状态
+            detailItem.classList.toggle('expanded');
+
+            // 如果是展开且内容未加载，则加载内容
+            if (detailItem.classList.contains('expanded') && detailInner.innerHTML === '') {
+                renderDetailContent(questionId, detailInner);
+            }
+        }
+
+        // 渲染详情内容
+        function renderDetailContent(questionId, container) {
+            const detail = questionDetailsCache[String(questionId)];
+
+            if (!detail) {
+                container.innerHTML = '<div class="section-content">暂无详细信息</div>';
+                return;
+            }
+
+            // 题型中文映射
+            const typeMap = {
+                'single_choice': '单选题',
+                'multiple_choice': '多选题',
+                'judgement': '判断题',
+                'fill_blank': '填空题',
+                'short_answer': '简答题',
+                'essay': '作文题'
+            };
+
+            // 从题干中提取选项
+            const extracted = extractOptions(detail.question_text);
+            const questionContent = extracted.question;
+            const questionOptions = extracted.options;
+
+            let html = `
+                <div class="detail-section">
+                    <div class="section-label">题目类型</div>
+                    <div class="section-content">${typeMap[detail.question_type] || detail.question_type}</div>
+                </div>
+            `;
+
+            // 题目内容
+            if (questionContent) {
+                html += `
+                    <div class="detail-section">
+                        <div class="section-label">题目内容</div>
+                        <div class="section-content">${escapeHtml(questionContent)}</div>
+                    </div>
+                `;
+            }
+
+            // 渲染选项（如果有）
+            if (Object.keys(questionOptions).length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <div class="section-label">选项</div>
+                        <div class="section-content">
+                            ${Object.entries(questionOptions).map(([letter, content]) => `
+                                <div class="option-line"><span class="option-letter">${letter}.</span><span>${escapeHtml(content)}</span></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (detail.user_answer !== null && detail.user_answer !== undefined) {
+                html += `
+                    <div class="detail-section">
+                        <div class="section-label">你的答案</div>
+                        <div class="section-content user-answer">${escapeHtml(detail.user_answer) || '未作答'}</div>
+                    </div>
+                `;
+            }
+
+            if (detail.ai_comment) {
+                html += `
+                    <div class="detail-section">
+                        <div class="section-label">AI 评价</div>
+                        <div class="section-content ai-comment">${escapeHtml(detail.ai_comment)}</div>
+                    </div>
+                `;
+            }
+
+            if (detail.ai_analysis) {
+                html += `
+                    <div class="detail-section">
+                        <div class="section-label">AI 解析</div>
+                        <div class="section-content ai-analysis">${escapeHtml(detail.ai_analysis)}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 从题干中提取选项
+        function extractOptions(questionText) {
+            const options = {};
+            const lines = questionText ? questionText.split('\n') : [];
+            let contentLines = [];
+            const optionPattern = /^([A-F])\s*[\.、]\s*(.+)$/;
+
+            lines.forEach(line => {
+                const match = line.match(optionPattern);
+                if (match) {
+                    const optionLetter = match[1];
+                    const optionContent = match[2].trim();
+                    options[optionLetter] = optionContent;
+                } else if (line.trim()) {
+                    contentLines.push(line);
+                }
+            });
+
+            return {
+                question: contentLines.join('\n'),
+                options: options
+            };
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 显示错误
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // 页面加载
+        window.addEventListener('DOMContentLoaded', loadExamResult);
+    </script>
+</body>
+</html>

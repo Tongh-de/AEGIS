@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考核历史</title>
+    <link rel="icon" type="image/x-icon" href="/compfox/static/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* 登录界面 */
+        .login-screen {
+            display: block;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .login-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+            transition: border-color 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .start-btn {
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 历史记录列表 */
+        .history-list {
+            display: none;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .history-item {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e1e5e9;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .item-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .item-status {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .item-status.ongoing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .item-status.submitted {
+            background: #e7f3ff;
+            color: #0056b3;
+        }
+
+        .item-status.graded {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .item-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .item-score {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .item-score.excellent {
+            color: #28a745;
+        }
+
+        .item-score.good {
+            color: #20c997;
+        }
+
+        .item-score.average {
+            color: #ffc107;
+        }
+
+        .item-score.poor {
+            color: #dc3545;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error-message {
+            display: none;
+            padding: 20px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #e1e5e9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">
+            <img src="/compfox/static/wolin.jpg" alt="Logo" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+            考核历史
+        </h1>
+
+        <!-- 登录界面 -->
+        <div class="login-screen" id="loginScreen">
+            <p style="font-size: 16px; color: #666; margin-bottom: 20px;">
+                请输入您的姓名查询历史考核记录
+            </p>
+            <input type="text" class="login-input" id="usernameInput" placeholder="请输入姓名">
+            <button class="start-btn" id="loginBtn" onclick="login()">
+                ✓ 查询记录
+            </button>
+        </div>
+
+        <!-- 加载状态 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">正在加载历史记录...</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- 历史记录列表 -->
+        <div class="history-list" id="historyList">
+            <div class="history-header">
+                <h2 style="font-size: 20px; color: #333;">历史记录</h2>
+                <span style="color: #666; font-size: 14px;">共 <span id="totalCount">0</span> 条记录</span>
+            </div>
+            <div id="historyItems"></div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">📭</div>
+            <p style="font-size: 16px; margin-bottom: 20px;">暂无考核记录</p>
+            <p style="color: #999; font-size: 14px;">完成一次考核后，记录将显示在这里</p>
+        </div>
+    </div>
+
+    <script>
+        let username = null;
+
+        // 登录
+        function login() {
+            const input = document.getElementById('usernameInput');
+            username = input.value.trim();
+
+            if (!username) {
+                showError('请输入姓名');
+                return;
+            }
+
+            // 隐藏登录界面，显示加载
+            document.getElementById('loginScreen').style.display = 'none';
+            showLoading('正在加载历史记录...');
+
+            // 获取历史记录
+            fetch(`/compfox/exam/history?user_id=${encodeURIComponent(username)}&limit=20`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status_code === 200) {
+                        renderHistory(data.data || []);
+                    } else {
+                        showError('加载失败：' + (data.msg || '未知错误'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showError('网络错误，请检查网络连接');
+                });
+        }
+
+        // 渲染历史记录
+        function renderHistory(history) {
+            document.getElementById('loading').style.display = 'none';
+
+            if (!history || history.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('historyList').style.display = 'block';
+            document.getElementById('totalCount').textContent = history.length;
+
+            const container = document.getElementById('historyItems');
+            container.innerHTML = '';
+
+            history.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'history-item';
+                itemDiv.onclick = () => viewResult(item.exam_uuid);
+
+                const scoreRate = item.max_score > 0 ? (item.total_score / item.max_score) : 0;
+                let scoreClass = 'average';
+                if (scoreRate >= 0.8) scoreClass = 'excellent';
+                else if (scoreRate >= 0.6) scoreClass = 'good';
+                else if (scoreRate < 0.4) scoreClass = 'poor';
+
+                const statusMap = {
+                    'ongoing': '进行中',
+                    'submitted': '已提交',
+                    'graded': '已判卷'
+                };
+
+                const dateStr = item.created_at ? new Date(item.created_at).toLocaleString('zh-CN') : '未知时间';
+
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <span class="item-title">${item.paper_name}</span>
+                        <span class="item-status ${item.status}">${statusMap[item.status] || item.status}</span>
+                    </div>
+                    <div class="item-meta">
+                        <span>📋 ${item.subject || '未知合规领域'}</span>
+                        <span>🕐 ${dateStr}</span>
+                    </div>
+                    ${item.status === 'graded' ? `
+                        <div class="item-score ${scoreClass}">
+                            得分：${item.total_score} / ${item.max_score}
+                            ${scoreRate > 0 ? `(${(scoreRate * 100).toFixed(1)}%)` : ''}
+                        </div>
+                    ` : ''}
+                `;
+
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // 查看结果
+        function viewResult(examUuid) {
+            // 通过 exam_uuid 跳转，后端会自动处理
+            window.location.href = `/compfox/exam-result?exam_uuid=${examUuid}`;
+        }
+
+        // 显示加载
+        function showLoading(text) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loadingText').textContent = text || '正在加载...';
+        }
+
+        // 显示错误
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // 支持回车键登录
+        document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>

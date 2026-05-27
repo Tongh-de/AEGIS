@@ -1,0 +1,50 @@
+{
+  "name": "合规法规检索基线评测",
+  "version": "1.0",
+  "description": "覆盖反洗钱、数据安全、内幕交易三个合规领域的检索评测，用于验证切片参数和混合搜索权重的效果",
+  "k_values": [3, 5, 10],
+  "source_type": null,
+  "tags": null,
+  "queries": [
+    {
+      "query_id": "q001",
+      "query_text": "金融机构在反洗钱工作中需要建立哪些客户身份识别制度",
+      "relevant_doc_ids": [],
+      "relevant_chunks": [],
+      "ground_truth": "金融机构应建立健全客户身份识别制度、客户身份资料和交易记录保存制度、大额交易和可疑交易报告制度。对客户实行实名制管理，了解客户交易目的和性质，进行客户风险等级划分。",
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "q002",
+      "query_text": "数据安全法中关于重要数据出境有哪些规定",
+      "relevant_doc_ids": [],
+      "relevant_chunks": [],
+      "ground_truth": "关键信息基础设施运营者在境内收集和产生的重要数据应当在境内存储。确需向境外提供的，应当进行安全评估。数据处理者向境外提供重要数据，应当经过网信部门组织的安全评估。",
+      "difficulty": "hard"
+    },
+    {
+      "query_id": "q003",
+      "query_text": "什么是内幕交易？其构成要件有哪些",
+      "relevant_doc_ids": [],
+      "relevant_chunks": [],
+      "ground_truth": "内幕交易是指内幕信息知情人利用未公开的内幕信息进行证券交易的行为。构成要件包括：行为主体是内幕信息知情人、利用了未公开的内幕信息、进行了相关证券交易、主观上具有故意。",
+      "difficulty": "easy"
+    },
+    {
+      "query_id": "q004",
+      "query_text": "金融机构大额交易报告的标准是什么",
+      "relevant_doc_ids": [],
+      "relevant_chunks": [],
+      "ground_truth": "单笔或当日累计人民币5万元以上的现金交易、单笔或当日累计等值1万美元以上的跨境交易、单笔或当日累计人民币50万元以上的转账交易等需要报告。非自然人客户当日账户交易资金达到人民币200万元以上的也应报告。",
+      "difficulty": "medium"
+    },
+    {
+      "query_id": "q005",
+      "query_text": "市场操纵行为有哪些常见类型",
+      "relevant_doc_ids": [],
+      "relevant_chunks": [],
+      "ground_truth": "市场操纵包括连续交易操纵（坐庄）、约定交易操纵（对敲）、洗售操纵（对倒）、蛊惑交易操纵（散布谣言）、抢帽子交易操纵、虚假申报操纵等。利用资金优势、持股优势或信息优势影响证券价格的行为均可能构成市场操纵。",
+      "difficulty": "medium"
+    }
+  ]
+}

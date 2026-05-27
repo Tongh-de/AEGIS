@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黄金矿工双人版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            background: #f0e6d3;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 15px;
+            width: 100vw;
+            height: 100vh;
+            max-width: 100%;
+            max-height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #8b4513;
+        }
+
+        .game-header h1 {
+            font-size: 1.2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin: 5px 0;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            background: #d4c5a9;
+            padding: 6px 10px;
+            border-radius: 10px;
+            min-height: 40px;
+            max-height: 60px;
+        }
+
+        .player-info {
+            text-align: center;
+            flex: 1;
+        }
+
+        .player-info h3 {
+            color: #8b4513;
+            margin: 0;
+            font-size: 0.8em;
+        }
+
+        .player-info p {
+            font-size: 0.7em;
+            margin: 2px 0;
+        }
+
+        .level-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 2;
+            color: #8b4513;
+            font-size: 0.7em;
+        }
+
+        .level-info h3 {
+            margin: 0;
+            font-size: 0.8em;
+        }
+
+        .level-info p {
+            margin: 0;
+            font-size: 0.7em;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 5px 0;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+        }
+
+        #gameCanvas {
+            background: linear-gradient(180deg, #87CEEB 0%, #4a90a4 30%, #8B4513 100%);
+            border: 4px solid #8b4513;
+            border-radius: 10px;
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            touch-action: none;
+        }
+
+        .vertical-controls {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(212, 197, 169, 0.9);
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        .player1-controls {
+            left: 10px;
+        }
+
+        .player2-controls {
+            right: 10px;
+        }
+
+        .vertical-controls h4 {
+            color: #8b4513;
+            margin-bottom: 8px;
+            font-size: 0.8em;
+            text-align: center;
+        }
+
+        .vertical-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .vertical-buttons .virtual-btn {
+            width: 80px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+        }
+
+        .vertical-buttons .virtual-btn.hook-btn {
+            height: 60px;
+        }
+
+        .virtual-btn {
+            background: linear-gradient(145deg, #b8860b, #8b6914);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9em;
+            padding: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .virtual-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .virtual-btn.hook-btn {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            grid-column: span 4;
+            font-size: 1.1em;
+            padding: 10px;
+        }
+
+        .virtual-btn span {
+            display: block;
+            font-size: 0.6em;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+
+            .game-header h1 {
+                font-size: 1.5em;
+            }
+
+            .game-info {
+                padding: 8px;
+                flex-wrap: wrap;
+            }
+
+            .player-info, .level-info {
+                min-width: 45%;
+                margin-bottom: 8px;
+            }
+
+            .virtual-btn {
+                padding: 10px 8px;
+                font-size: 1em;
+            }
+
+            .virtual-btn.hook-btn {
+                padding: 12px;
+                font-size: 1.2em;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #f0e6d3;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            color: #8b4513;
+        }
+
+        .modal-content h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #b8860b;
+        }
+
+        .shop-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .shop-item {
+            background: #d4c5a9;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .shop-item:hover {
+            transform: scale(1.05);
+        }
+
+        .shop-item h4 {
+            color: #b8860b;
+            margin-bottom: 10px;
+        }
+
+        .shop-item p {
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+
+        .shop-item .price {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .btn {
+            background: #b8860b;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #8b6914;
+        }
+
+        .btn-secondary {
+            background: #6b6b6b;
+        }
+
+        .btn-secondary:hover {
+            background: #4a4a4a;
+        }
+
+        .item-count {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" style="position: relative;">
+        <div class="game-header">
+            <h1>🏆 黄金矿工双人版 🏆</h1>
+        </div>
+
+        <div class="game-info">
+            <div class="player-info">
+                <h3>玩家 1</h3>
+                <p>个人分数: <span id="player1Score">0</span></p>
+            </div>
+            <div class="level-info">
+                <h3>关卡 <span id="currentLevel">1</span></h3>
+                <p>剩余时间: <span id="timeLeft">60</span>秒</p>
+                <p>总目标: <span id="totalTarget">0</span></p>
+                <p>总分: <span id="totalScore">0</span></p>
+                <p>总金币: <span id="totalGold">0</span></p>
+            </div>
+            <div class="player-info">
+                <h3>玩家 2</h3>
+                <p>个人分数: <span id="player2Score">0</span></p>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+        </div>
+
+        <!-- 左侧玩家1按钮 -->
+        <div class="player1-controls vertical-controls">
+            <h4>👷 玩家 1</h4>
+            <div class="vertical-buttons">
+                <button class="virtual-btn hook-btn" ontouchstart="game.triggerHook(0)" onclick="game.triggerHook(0)">
+                    🪝 
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(0, 'strength')" onclick="game.useItem(0, 'strength')">
+                    💪
+                    <span>力量 x<span id="shared-strength">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(0, 'lucky')" onclick="game.useItem(0, 'lucky')">
+                    🍀
+                    <span>幸运 x<span id="shared-lucky">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(0, 'dynamite')" onclick="game.useItem(0, 'dynamite')">
+                    💣
+                    <span>炸药 x<span id="shared-dynamite">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(0, 'clock')" onclick="game.useItem(0, 'clock')">
+                    ⏰
+                    <span>时钟 x<span id="shared-clock">0</span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 右侧玩家2按钮 -->
+        <div class="player2-controls vertical-controls">
+            <h4>👷 玩家 2</h4>
+            <div class="vertical-buttons">
+                <button class="virtual-btn hook-btn" ontouchstart="game.triggerHook(1)" onclick="game.triggerHook(1)">
+                    🪝
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(1, 'strength')" onclick="game.useItem(1, 'strength')">
+                    💪
+                    <span>力量 x<span id="shared-strength2">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(1, 'lucky')" onclick="game.useItem(1, 'lucky')">
+                    🍀
+                    <span>幸运 x<span id="shared-lucky2">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(1, 'dynamite')" onclick="game.useItem(1, 'dynamite')">
+                    💣
+                    <span>炸药 x<span id="shared-dynamite2">0</span></span>
+                </button>
+                <button class="virtual-btn" ontouchstart="game.useItem(1, 'clock')" onclick="game.useItem(1, 'clock')">
+                    ⏰
+                    <span>时钟 x<span id="shared-clock2">0</span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开始游戏弹窗 -->
+    <div id="startModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2 class="floating">🎮 黄金矿工双人版</h2>
+            <p>双人合作闯关游戏</p>
+            <p>两人共同努力达到目标分数，才能进入下一关！</p>
+            <p style="color: #b8860b; margin-top: 10px;">💰 金币和道具共享，任何玩家都可以使用</p>
+            <br>
+            <button class="btn" onclick="game.startGame()">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 商店弹窗 -->
+    <div id="shopModal" class="modal">
+        <div class="modal-content">
+            <h2>🛒 商店</h2>
+            <p>使用金币购买道具（共享）</p>
+            <p>总金币: <span id="shopTotalGold">0</span></p>
+
+            <div class="shop-items">
+                <div class="shop-item" onclick="game.buyItem('strength')">
+                    <h4>💪 力量药水</h4>
+                    <p>增加钩子拉力</p>
+                    <p class="price">100 金币</p>
+                    <p>数量: <span class="item-count" id="shop-strength">0</span></p>
+                </div>
+                <div class="shop-item" onclick="game.buyItem('lucky')">
+                    <h4>🍀 幸运药水</h4>
+                    <p>增加钻石出现率</p>
+                    <p class="price">150 金币</p>
+                    <p>数量: <span class="item-count" id="shop-lucky">0</span></p>
+                </div>
+                <div class="shop-item" onclick="game.buyItem('dynamite')">
+                    <h4>💣 炸药</h4>
+                    <p>炸毁钩到的物品</p>
+                    <p class="price">80 金币</p>
+                    <p>数量: <span class="item-count" id="shop-dynamite">0</span></p>
+                </div>
+                <div class="shop-item" onclick="game.buyItem('clock')">
+                    <h4>⏰ 时钟</h4>
+                    <p>增加游戏时间</p>
+                    <p class="price">120 金币</p>
+                    <p>数量: <span class="item-count" id="shop-clock">0</span></p>
+                </div>
+            </div>
+
+            <button class="btn" onclick="game.nextLevel()">进入下一关</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束弹窗 -->
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2>🎮 游戏结束</h2>
+            <p>最终分数</p>
+            <p>玩家1: <span id="finalScore1">0</span></p>
+            <p>玩家2: <span id="finalScore2">0</span></p>
+            <p>总分: <span id="finalTotalScore">0</span></p>
+            <br>
+            <button class="btn" onclick="game.restartGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script src="/education/js/goldminers/config.js"></script>
+    <script src="/education/js/goldminers/entities.js"></script>
+    <script src="/education/js/goldminers/shop.js"></script>
+    <script src="/education/js/goldminers/input.js"></script>
+    <script src="/education/js/goldminers/game.js"></script>
+    <script src="/education/js/goldminers/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+version: "3.8"
+
+services:
+  # ========================================
+  # MySQL 8.0
+  # ========================================
+  mysql:
+    image: mysql:8.0
+    container_name: aegis-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${DB_NAME:-for_student}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    ports:
+      - "${MYSQL_PORT:-33061}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ========================================
+  # Redis 7
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: aegis-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Neo4j 5
+  # ========================================
+  neo4j:
+    image: neo4j:5
+    container_name: aegis-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j123}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "${NEO4J_USER:-neo4j}", "-p", "${NEO4J_PASSWORD:-neo4j123}", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  # ========================================
+  # MinIO 对象存储
+  # ========================================
+  minio:
+    image: minio/minio:latest
+    container_name: aegis-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Milvus 2.4 Standalone (内嵌 etcd + 本地存储)
+  # ========================================
+  milvus:
+    image: milvusdb/milvus:v2.4.15
+    container_name: aegis-milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_USE_EMBED: "true"
+      COMMON_STORAGETYPE: "local"
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ========================================
+  # Base API 服务
+  # ========================================
+  base-api:
+    build: .
+    container_name: aegis-base-api
+    restart: unless-stopped
+    environment:
+      APP_MODULE: Base.main:app
+      APP_PORT: "8010"
+      # 数据库
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root123}
+      DB_NAME: ${DB_NAME:-for_student}
+      DB_CHARSET: utf8mb4
+      BASE_DB_NAME: ${BASE_DB_NAME:-ric_ai_base}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      # Neo4j
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j123}
+      NEO4J_DATABASE: neo4j
+      # MinIO
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ASR_TEXT_BUCKET_NAME: audio-text
+      # Milvus
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      MILVUS_URI: http://milvus:19530
+      MILVUS_USER: root
+      MILVUS_PASSWORD: Milvus@2025
+      MILVUS_DATABASE: default
+      MILVUS_TIMEOUT: "10"
+      MILVUS_COLLECTION_NAME: demo_collection
+      VECTOR_DIM: "768"
+      MILVUS_SECURE: "False"
+      MILVUS_ALIAS: default
+      # LLM / AI
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+      DSC_API_URL: ${DSC_API_URL:-https://dashscope.aliyuncs.com/api/v1}
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      QWEN_DEFAULT_MODEL: ${QWEN_DEFAULT_MODEL:-qwen3-max}
+      MY_DASHSCOPE_API_KEY: ${MY_DASHSCOPE_API_KEY:-}
+      QWEN_EMBEDDING_MODEL_NAME: ${QWEN_EMBEDDING_MODEL_NAME:-text-embedding-v3}
+      QWEN_ASR_MODEL_NAME: ${QWEN_ASR_MODEL_NAME:-qwen3-asr-flash}
+      QWEN_OCR_MODEL_NAME: ${QWEN_OCR_MODEL_NAME:-qwen-vl-ocr-latest}
+      DEEPSEEK_DEFAULT_MODEL: ${DEEPSEEK_DEFAULT_MODEL:-deepseek-chat}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      # Email
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      SENDER_EMAIL: ${SENDER_EMAIL:-}
+      # FFmpeg
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      # 日志
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # 腾讯云 COS
+      TC_SECRET_ID: ${TC_SECRET_ID:-}
+      TC_SECRET_KEY: ${TC_SECRET_KEY:-}
+      TC_REGION: ${TC_REGION:-ap-guangzhou}
+      TC_BUCKET_NAME: ${TC_BUCKET_NAME:-}
+      TC_SCHEME: ${TC_SCHEME:-https}
+      # TTS
+      TTS_SERVER_URL: ${TTS_SERVER_URL:-http://47.115.57.130:50000/}
+      TTS_BUCKET_NAME: ${TTS_BUCKET_NAME:-tts-audio-cache}
+      # Auth
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      AUTH_JWT_ALGORITHM: HS256
+      AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      AUTH_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+    ports:
+      - "${BASE_API_PORT:-8010}:8010"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+
+  # ========================================
+  # CompFox API 服务
+  # ========================================
+  compfox-api:
+    build: .
+    container_name: aegis-compfox-api
+    restart: unless-stopped
+    environment:
+      APP_MODULE: CompFox.main:app
+      APP_PORT: "8003"
+      # 数据库
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root123}
+      DB_NAME: ${DB_NAME:-for_student}
+      DB_CHARSET: utf8mb4
+      BASE_DB_NAME: ${BASE_DB_NAME:-ric_ai_base}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      # Neo4j
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j123}
+      NEO4J_DATABASE: neo4j
+      # MinIO
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ASR_TEXT_BUCKET_NAME: audio-text
+      # Milvus
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      MILVUS_URI: http://milvus:19530
+      MILVUS_USER: root
+      MILVUS_PASSWORD: Milvus@2025
+      MILVUS_DATABASE: default
+      MILVUS_TIMEOUT: "10"
+      MILVUS_COLLECTION_NAME: demo_collection
+      VECTOR_DIM: "768"
+      MILVUS_SECURE: "False"
+      MILVUS_ALIAS: default
+      # LLM / AI
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+      DSC_API_URL: ${DSC_API_URL:-https://dashscope.aliyuncs.com/api/v1}
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      QWEN_DEFAULT_MODEL: ${QWEN_DEFAULT_MODEL:-qwen3-max}
+      MY_DASHSCOPE_API_KEY: ${MY_DASHSCOPE_API_KEY:-}
+      QWEN_EMBEDDING_MODEL_NAME: ${QWEN_EMBEDDING_MODEL_NAME:-text-embedding-v3}
+      QWEN_ASR_MODEL_NAME: ${QWEN_ASR_MODEL_NAME:-qwen3-asr-flash}
+      QWEN_OCR_MODEL_NAME: ${QWEN_OCR_MODEL_NAME:-qwen-vl-ocr-latest}
+      DEEPSEEK_DEFAULT_MODEL: ${DEEPSEEK_DEFAULT_MODEL:-deepseek-chat}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      # Email
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      SENDER_EMAIL: ${SENDER_EMAIL:-}
+      # FFmpeg
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      # 日志
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # 腾讯云 COS
+      TC_SECRET_ID: ${TC_SECRET_ID:-}
+      TC_SECRET_KEY: ${TC_SECRET_KEY:-}
+      TC_REGION: ${TC_REGION:-ap-guangzhou}
+      TC_BUCKET_NAME: ${TC_BUCKET_NAME:-}
+      TC_SCHEME: ${TC_SCHEME:-https}
+      # TTS
+      TTS_SERVER_URL: ${TTS_SERVER_URL:-http://47.115.57.130:50000/}
+      TTS_BUCKET_NAME: ${TTS_BUCKET_NAME:-tts-audio-cache}
+      # Auth
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      AUTH_JWT_ALGORITHM: HS256
+      AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      AUTH_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+    ports:
+      - "${COMPFOX_API_PORT:-8003}:8003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+
+volumes:
+  mysql_data:
+  redis_data:
+  neo4j_data:
+  neo4j_logs:
+  minio_data:
+  milvus_data:
+  app_logs:
